@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Subsystems.Limelight;
+import frc.robot.Utilities.PolarVector;
 
 public class Drive extends SubsystemBase {
     private Gyroscope gyro = new Gyroscope();
@@ -65,6 +66,25 @@ public class Drive extends SubsystemBase {
 
     public void set_gyro_offset(Rotation2d offset){
         gyro.set_offset(offset);
+    }
+
+    public Rotation2d get_gyro_angle(){
+        return gyro.get_angle();
+    }
+    
+    /**
+     * 
+     * @param desired_robot_linear_velocity
+     * @param desired_angular_velocity
+     * @return the wheels desired output in order of front_right, front_left, back_left, back_right
+     */
+    public PolarVector[] calculate_wheel_velocities(PolarVector desired_robot_linear_velocity, double desired_angular_velocity){
+        return new PolarVector[] {
+            front_right_wheel.calculate(desired_robot_linear_velocity, desired_angular_velocity),
+            front_left_wheel .calculate(desired_robot_linear_velocity, desired_angular_velocity),
+            back_left_wheel  .calculate(desired_robot_linear_velocity, desired_angular_velocity),
+            back_right_wheel .calculate(desired_robot_linear_velocity, desired_angular_velocity)
+        };
     }
 
     /**
