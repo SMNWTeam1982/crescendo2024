@@ -16,12 +16,14 @@ public class Swerve extends Command {
   private final Drive drive;
   private final Supplier<PolarVector> linear_velocity_function;
   private final Supplier<Double> angular_velocity_function;
+  private final Supplier<Boolean> maximize_velocity_function; 
 
   /** Creates a new Swerve. */
-    public Swerve(Drive drive, Supplier<PolarVector> linear_velocty_function, Supplier<Double> angular_veloctity_function) {
+    public Swerve(Drive drive, Supplier<PolarVector> linear_velocty_function, Supplier<Double> angular_veloctity_function, Supplier<Boolean> maximize_velocity_function) {
       this.drive = drive;
       this.linear_velocity_function = linear_velocty_function;
       this.angular_velocity_function = angular_veloctity_function;
+      this.maximize_velocity_function = maximize_velocity_function;
       addRequirements(drive);
       // Use addRequirements() here to declare subsystem dependencies.
     }
@@ -39,14 +41,7 @@ public class Swerve extends Command {
 
       PolarVector field_oriented_velocity = new PolarVector(desired_velocity.angle.plus(gyro_angle), desired_velocity.length);
 
-      // front_right_wheel.swerve(field_oriented_velocity.angle, field_oriented_velocity.length, angular_velocity);;
-      // front_left_wheel.swerve(field_oriented_velocity.angle, field_oriented_velocity.length, angular_velocity);;
-      // back_left_wheel.swerve(field_oriented_velocity.angle, field_oriented_velocity.length, angular_velocity);;
-      // back_right_wheel.swerve(field_oriented_velocity.angle, field_oriented_velocity.length, angular_velocity);;
-
-      
-
-      if(!maximize_speed){
+      if(!maximize_velocity_function.get()){
           front_right_wheel.run(front_right_desired_velocty, 1.0);
           front_left_wheel.run(front_left_desired_velocty, 1.0);
           back_left_wheel.run(back_left_desired_velocty, 1.0);

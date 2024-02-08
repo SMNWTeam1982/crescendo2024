@@ -71,9 +71,8 @@ public class Drive extends SubsystemBase {
     public Rotation2d get_gyro_angle(){
         return gyro.get_angle();
     }
-    
+
     /**
-     * 
      * @param desired_robot_linear_velocity
      * @param desired_angular_velocity
      * @return the wheels desired output in order of front_right, front_left, back_left, back_right
