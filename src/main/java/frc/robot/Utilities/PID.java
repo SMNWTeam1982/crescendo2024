@@ -17,7 +17,7 @@ public class PID {
 		d = D;
 	}
 
-	public void Update(double P, double I, double D, double sampleRate){
+	public void update(double P, double I, double D, double sampleRate){
 		p = P;
 		i = I;
 		d = D;
@@ -25,7 +25,7 @@ public class PID {
 	}
     
     //use this for a general PID output
-	public double Out(double currentValue, double targetValue, double targetRate){
+	public double out(double currentValue, double targetValue, double targetRate){
 
 		double error = targetValue - currentValue;
 
@@ -33,7 +33,7 @@ public class PID {
 
 		double rateError = targetRate - rate;
         
-        accumulatedError = accumulatedError + error;
+        accumulatedError += error;
 		
         lastValue = currentValue;
 
@@ -41,7 +41,7 @@ public class PID {
 	}
 
     //use this if you are getting a rate value as input like from the gyroscope
-	public double RateOut(double currentValue, double targetValue, double targetRate, double rateInput){
+	public double rate_out(double currentValue, double targetValue, double targetRate, double rateInput){
 
 		double error = targetValue - currentValue;
         
@@ -49,14 +49,14 @@ public class PID {
 
 		double rateError = targetRate - rate;
         
-        accumulatedError = accumulatedError + error;
+        accumulatedError += error;
 		
         lastValue = currentValue;
 
 		return p*error + i*accumulatedError + d*rateError;
 	}
 
-	public double getRate(){
+	public double get_rate(){
 		return rate;
 	}
 }

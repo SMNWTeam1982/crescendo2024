@@ -18,36 +18,36 @@ public class Drive extends SubsystemBase {
         5,
         6,
         1,
-        Constants.front_right_encoder_offset,
-        Constants.front_right_tangent
+        Constants.DriveConstants.front_right_encoder_offset,
+        Constants.DriveConstants.front_right_tangent
     );
     
     private final Wheel front_left_wheel = new Wheel(
         3,
         4,
         2,
-        Constants.front_left_encoder_offset,
-        Constants.front_left_tangent
+        Constants.DriveConstants.front_left_encoder_offset,
+        Constants.DriveConstants.front_left_tangent
     );
 
     private final Wheel back_left_wheel = new Wheel(
         1,
         2,
         3,
-        Constants.back_left_encoder_offset,
-        Constants.back_left_tangent
+        Constants.DriveConstants.back_left_encoder_offset,
+        Constants.DriveConstants.back_left_tangent
     );
 
     private final Wheel back_right_wheel = new Wheel(
         7,
         8,
         4,
-        Constants.back_right_encoder_offset,
-        Constants.back_right_tangent
+        Constants.DriveConstants.back_right_encoder_offset,
+        Constants.DriveConstants.back_right_tangent
     );
 
     private final SwerveDrivePoseEstimator pose_estimator = new SwerveDrivePoseEstimator(
-        Constants.kinematics,
+        Constants.DriveConstants.kinematics,
         get_gyro_angle(),
         get_module_positions(),
         Limelight.get_field_position()
@@ -114,31 +114,6 @@ public class Drive extends SubsystemBase {
             back_left_wheel  .get_position(),
             back_right_wheel .get_position(),
         };
-    }
-
-
-    /**
-     * Example command factory method.
-     *
-     * @return a command
-     */
-    public Command exampleMethodCommand() {
-        // Inline construction of command goes here.
-        // Subsystem::RunOnce implicitly requires `this` subsystem.
-        return runOnce(
-            () -> {
-                /* one-time action goes here */
-            });
-    }
-
-    /**
-     * An example method querying a boolean state of the subsystem (for example, a digital sensor).
-     *
-     * @return value of some boolean subsystem state, such as a digital sensor.
-     */
-    public boolean exampleCondition() {
-        // Query some boolean state, such as a digital sensor.
-        return false;
     }
 
     @Override

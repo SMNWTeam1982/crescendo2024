@@ -11,12 +11,12 @@ import frc.robot.Utilities.Tracking;
 public class Limelight {
 
     public static boolean visible_speaker(){
-        set_pipeline(Constants.speaker_tracking_channel);
+        set_pipeline(Constants.LimeLightConstants.speaker_tracking_channel);
         return visible_target();
     }
 
     public static boolean visible_tracking_target(){
-        set_pipeline(Constants.field_movement_channel);
+        set_pipeline(Constants.LimeLightConstants.field_movement_channel);
         return visible_target();
     }
     
@@ -25,7 +25,7 @@ public class Limelight {
     }
 
     public static Tracking get_field_tracking(){
-        set_pipeline(Constants.field_movement_channel);
+        set_pipeline(Constants.LimeLightConstants.field_movement_channel);
         return new Tracking(
             LimelightHelpers.getBotPose3d("").toPose2d(),
             LimelightHelpers.getLatestResults("").targetingResults.targets_Fiducials.length
@@ -45,7 +45,7 @@ public class Limelight {
     }
 
     public static Pose2d get_field_position(){
-        set_pipeline(Constants.field_movement_channel);
+        set_pipeline(Constants.LimeLightConstants.field_movement_channel);
         return LimelightHelpers.getBotPose3d("").toPose2d();
     }
     /**

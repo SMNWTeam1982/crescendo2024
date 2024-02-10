@@ -26,7 +26,11 @@ public class Wheel {
     public final CANcoder encoder;
     public final Rotation2d encoder_offset;
     public final Rotation2d tangent_angle;
-    private final PID pid = new PID(Constants.wheel_p,Constants.wheel_i,Constants.wheel_d);
+    private final PID pid = new PID(
+        Constants.DriveConstants.wheel_rotation_p,
+        Constants.DriveConstants.wheel_rotation_i,
+        Constants.DriveConstants.wheel_rotation_d
+    );
 
     private Rotation2d last_rotation = Rotation2d.fromDegrees(0.0);
 
@@ -64,10 +68,10 @@ public class Wheel {
     }
 
     public double get_wheel_velocity(){
-        return go_motor_encoder.getVelocity() * Constants.go_motor_rpm_to_meters_per_second;
+        return go_motor_encoder.getVelocity() * Constants.DriveConstants.go_motor_rpm_to_meters_per_second;
     }
     public double get_wheel_position(){
-        return go_motor_encoder.getPosition() * Constants.wheel_rotations_to_meters_traveled;
+        return go_motor_encoder.getPosition() * Constants.DriveConstants.wheel_rotations_to_meters_traveled;
     }
     public void zero_wheel_position(){
         go_motor_encoder.setPosition(0.0);
@@ -78,7 +82,7 @@ public class Wheel {
     }
 
     public double get_PID(Rotation2d angle){
-        return pid.Out(angle.getDegrees(), 0,0);
+        return pid.out(angle.getDegrees(), 0,0);
     }
 
     public void set_turn_braking(boolean brake){
@@ -105,7 +109,7 @@ public class Wheel {
      */
     public PolarVector calculate( PolarVector desired_robot_velocity, double angular_velocity){
 
-        PolarVector tangent_vector = new PolarVector(tangent_angle.unaryMinus(), angular_velocity * Constants.angular_velocity_dampen_multiplier);
+        PolarVector tangent_vector = new PolarVector(tangent_angle.unaryMinus(), angular_velocity * Constants.DriveConstants.angular_velocity_multiplier);
 
         Vector result_vector = new Vector(
             tangent_vector.x() + desired_robot_velocity.x(),
@@ -185,28 +189,28 @@ public class Wheel {
 
     public void move_turn_motor( double power ){
         if (power > 1.0){
-            turn_motor.set( 1.0 * Constants.wheel_rotation_multiplier );
+            turn_motor.set( 1.0 * Constants.DriveConstants.wheel_rotation_multiplier );
             return;
         }
 
         if (power < -1.0){
-            turn_motor.set( -1.0 * Constants.wheel_rotation_multiplier );
+            turn_motor.set( -1.0 * Constants.DriveConstants.wheel_rotation_multiplier );
             return;
         }
 
-        turn_motor.set( power * Constants.wheel_rotation_multiplier );
+        turn_motor.set( power * Constants.DriveConstants.wheel_rotation_multiplier );
     }
 
     public void move_go_motor( double power ){
         if (power > 1.0){
-            go_motor.set( 1.0 * Constants.wheel_speed_multiplier );
+            go_motor.set( 1.0 * Constants.DriveConstants.wheel_speed_multiplier );
             return;
         }
 
         if (power < -1.0){
-            go_motor.set( -1.0 * Constants.wheel_speed_multiplier );
+            go_motor.set( -1.0 * Constants.DriveConstants.wheel_speed_multiplier );
             return;
         }
-        go_motor.set( power * Constants.wheel_speed_multiplier); 
+        go_motor.set( power * Constants.DriveConstants.wheel_speed_multiplier); 
     }
 }

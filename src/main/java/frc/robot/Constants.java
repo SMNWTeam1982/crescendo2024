@@ -5,73 +5,98 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 
 public class Constants {
-    public static final double wheel_p = 0.038;
-    public static final double wheel_i = 0.0;
-    public static final double wheel_d = 0.00024;
-    
-    public static final Rotation2d front_right_encoder_offset = Rotation2d.fromDegrees(305.420);//33.419921875;//35.68359375;//34.365234375;//45.0;//34.365234375;
-    public static final Rotation2d front_right_tangent = Rotation2d.fromDegrees(135.0);
+    public static final class DriveConstants {
+        
+        public static final double wheel_speed_multiplier = 0.4;//0.2
+        public static final double wheel_rotation_multiplier = 0.15;//0.25
+        public static final double angular_velocity_multiplier = 0.2;
 
-    public static final Rotation2d front_left_encoder_offset = Rotation2d.fromDegrees(177.715 + 180.0);//89.9785150;//87.451171875;//93.275390625;//90.0;//93.275390625;
-    public static final Rotation2d front_left_tangent = Rotation2d.fromDegrees(45.0);
+        public static final double wheel_rotation_p = 0.038;
+        public static final double wheel_rotation_i = 0.0;
+        public static final double wheel_rotation_d = 0.00024;
+        
+        public static final Rotation2d front_right_encoder_offset = Rotation2d.fromDegrees(305.420);//33.419921875;//35.68359375;//34.365234375;//45.0;//34.365234375;
+        public static final Rotation2d front_right_tangent = Rotation2d.fromDegrees(135.0);
 
-    public static final Rotation2d back_left_encoder_offset = Rotation2d.fromDegrees(179.385 + 180.0);//87.802734375;//87.802734375;//87.978515625; //90.0;//87.978515625;
-    public static final Rotation2d back_left_tangent = Rotation2d.fromDegrees(315.0);
+        public static final Rotation2d front_left_encoder_offset = Rotation2d.fromDegrees(177.715 + 180.0);//89.9785150;//87.451171875;//93.275390625;//90.0;//93.275390625;
+        public static final Rotation2d front_left_tangent = Rotation2d.fromDegrees(45.0);
 
-    public static final Rotation2d back_right_encoder_offset = Rotation2d.fromDegrees(140.449);//231.416015625;//229.921875;//230.625;//45.0;//230.625;
-    public static final Rotation2d back_right_tangent = Rotation2d.fromDegrees(225.0);
+        public static final Rotation2d back_left_encoder_offset = Rotation2d.fromDegrees(179.385 + 180.0);//87.802734375;//87.802734375;//87.978515625; //90.0;//87.978515625;
+        public static final Rotation2d back_left_tangent = Rotation2d.fromDegrees(315.0);
 
-    // 6.75 rotations of the motor = 1 rotation of the wheel
-    // wheel diameter is about 4 inches
-    // measured wheel circimference is 28.55cm or 0.2855m
-    // 1 rpm = 7.049382716E-4
-    public static final double wheel_rotations_to_meters_traveled = 0.2855;
-    public static final double go_motor_rpm_to_meters_per_second = 7.049382716E-4;
+        public static final Rotation2d back_right_encoder_offset = Rotation2d.fromDegrees(140.449);//231.416015625;//229.921875;//230.625;//45.0;//230.625;
+        public static final Rotation2d back_right_tangent = Rotation2d.fromDegrees(225.0);
 
-    public static final Translation2d front_right_location = new Translation2d(0.2635,-0.2635);
-    public static final Translation2d front_left_location = new Translation2d(0.2635,0.2635);
-    public static final Translation2d back_left_location = new Translation2d(-0.2635,0.2635);
-    public static final Translation2d back_right_location = new Translation2d(-0.2635,-0.2635);
+        // 6.75 rotations of the motor = 1 rotation of the wheel
+        // wheel diameter is about 4 inches
+        // measured wheel circimference is 28.55cm or 0.2855m
+        // 1 rpm = 7.049382716E-4
+        public static final double wheel_rotations_to_meters_traveled = 0.2855;
+        public static final double go_motor_rpm_to_meters_per_second = 7.049382716E-4;
 
-    public static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(
-        front_left_location, front_right_location, back_left_location, back_right_location
-    );
+        public static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(
+            new Translation2d(0.2635,-0.2635),
+            new Translation2d(0.2635,0.2635),
+            new Translation2d(-0.2635,0.2635),
+            new Translation2d(-0.2635,-0.2635)
+        );
+    }
+
 
     //public static final double[] idHeights = {48.125, 48.125, 53.88, 53.88, 50.125, 50.125, 53.88, 53.88, 48.125, 48.125, 48.81, 48.81, 48.81, 48.81, 48.81, 48.81};
 
-    public static final double limelightMountAngleDegrees = 5; 
-    public static final double limelightLensHeightInches = 8.55; 
+    public static final class AutoConstants{
+        public static final double target_tracking_p = -0.05;
+        public static final double target_tracking_i = 0.0;
+        public static final double target_tracking_d = 0.001;
 
-    public static final double target_tracking_p = -0.05;
-    public static final double target_tracking_i = 0.0;
-    public static final double target_tracking_d = 0.001;
-
-    public static final double auto_move_p = 0.5;
-    public static final double auto_move_i = 0.0;
-    public static final double auto_move_d = 0.01;
+        public static final double auto_move_p = 0.5;
+        public static final double auto_move_i = 0.0;
+        public static final double auto_move_d = 0.01;
+    }
 
     public static final double winchArmP = 0.035;
     public static final double winchArmI = 0.0;
     public static final double winchArmD = 0.0;
     public static final double extenLen = 0.0;
 
-    public static final double pivotShooterP = 0.0;
-    public static final double pivotShooterI = 0.0;
-    public static final double pivotShooterD = 0.0;
-    public static final double encoder_to_deg_shoot = 0.0;
-    public static final double encoder_to_deg_in = 0.0;
-    public static final double intake_deg_offset = 0.0;
-    public static final double intake_deg_ground = 0.0;
-    public static final double intake_deg_stop = 0.0;
+    public static final class LimeLightConstants{
+        public static final double limelight_mount_angle = 0.0;
+        public static final double limelight_lens_hight = 0.0;
+        public static final int field_movement_channel = 0;
+        public static final int speaker_tracking_channel = 1;
+    }
 
+    public static final class ShooterConstants{
+        public static final double pivot_p = 1.0;
+        public static final double pivot_i = 0.0;
+        public static final double pivot_d = 0.0;
+        public static final Rotation2d shooter_start_angle = Rotation2d.fromDegrees(65.0);
+        // gear ratio is 100:1
+        public static final double pivot_motor_rotations_to_shooter_rotations = 0.01;
+
+        public static final double pivot_motor_multiplier = 1.0;
+
+        public static final double upper_shoot_motor_multiplier = 1.0;
+        public static final double lower_shoot_motor_multiplier = 1.0;
+
+        public static final double shooter_pivot_point_height = 0.46; // meters
+    }
+
+    public static final class IntakeConstants{
+        public static final double pivot_p = 1.0;
+        public static final double pivot_i = 0.0;
+        public static final double pivot_d = 0.0;
+        public static final Rotation2d intake_starting_position = Rotation2d.fromDegrees(0.0);
+        //gear ratio is 80:1
+        public static final double pivot_motor_rotations_to_intake_rotations = 0.0125;
+
+        public static final double pivot_motor_multiplier = 1.0;
+        public static final double intake_multiplier = 1.0;
+
+        public static final Rotation2d deployed_angle = Rotation2d.fromDegrees(180.0);
+        public static final Rotation2d handoff_angle = Rotation2d.fromDegrees(0.0);
+    }
     public static final double speaker_id_height = 51.875;
     public static final double speaker_height = 78.25;
-
-    public static final double wheel_speed_multiplier = 0.4;//0.2
-    public static final double wheel_rotation_multiplier = 0.15;//0.25
-
-    public static final double angular_velocity_dampen_multiplier = 0.2;
-
-    public static final int field_movement_channel = 0;
-    public static final int speaker_tracking_channel = 1;
 }

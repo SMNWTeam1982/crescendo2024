@@ -37,13 +37,17 @@ public class Swerve extends Command {
     public void execute() {
       PolarVector desired_velocity = linear_velocity_function.get();
       double desired_angular_velocity = angular_velocity_function.get();
+      boolean maximize_velocity = maximize_velocity_function.get();
+      if(desired_velocity.length < 0.01){
+        maximize_velocity = false;
+      }
       Rotation2d gyro_angle = drive.get_gyro_angle();
 
       PolarVector field_oriented_velocity = new PolarVector(desired_velocity.angle.plus(gyro_angle), desired_velocity.length);
 
       PolarVector[] wheel_velocities = drive.calculate_wheel_velocities(field_oriented_velocity, desired_angular_velocity);
 
-      if(!maximize_velocity_function.get()){
+      if(!maximize_velocity){
           drive.run_wheels(wheel_velocities, 1.0);
           return;
       }
