@@ -1,49 +1,80 @@
 package frc.robot.Subsystems.Swerve;
 
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkBase.IdleMode;
+import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import frc.robot.Constants;
 import frc.robot.Utilities.PID;
 import frc.robot.Utilities.PolarVector;
 import frc.robot.Utilities.Vector;
 
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.signals.AbsoluteSensorRangeValue;
 
 
 
 public class Wheel {
-    public CANSparkMax move_wheel;
-    public CANSparkMax turn_wheel;
-    public CANcoder encoder;
-    public Rotation2d encoder_offset;
-    public Rotation2d tangent_angle;
-    private PID pid = new PID(Constants.wheel_p,Constants.wheel_i,Constants.wheel_d);
+    public final CANSparkMax go_motor;
+    public final RelativeEncoder go_motor_encoder;
+    public final CANSparkMax turn_motor;
+    public final CANcoder encoder;
+    public final Rotation2d encoder_offset;
+    public final Rotation2d tangent_angle;
+    private final PID pid = new PID(Constants.wheel_p,Constants.wheel_i,Constants.wheel_d);
 
     private Rotation2d last_rotation = Rotation2d.fromDegrees(0.0);
 
-    public Wheel(CANSparkMax move_wheel, CANSparkMax turn_wheel, CANcoder encoder, Rotation2d encoder_offset, Rotation2d tangent_angle){
-        this.move_wheel = move_wheel;
-        this.turn_wheel = turn_wheel;
-        this.encoder = encoder;
+    public Wheel(int go_motor_channel, int turn_motor_channel, int encoder_channel, Rotation2d encoder_offset, Rotation2d tangent_angle){
+        go_motor = new CANSparkMax(go_motor_channel, MotorType.kBrushless);
+        go_motor_encoder = go_motor.getEncoder();
+        turn_motor = new CANSparkMax(turn_motor_channel, MotorType.kBrushless);
+        encoder = new CANcoder(encoder_channel);
         this.encoder_offset = encoder_offset;
         this.tangent_angle = tangent_angle;
 
-        move_wheel.restoreFactoryDefaults();
-        move_wheel.setClosedLoopRampRate(1.0);
-        move_wheel.setOpenLoopRampRate(0.5);
-        turn_wheel.restoreFactoryDefaults();
+        zero_wheel_position();
+
+        go_motor.restoreFactoryDefaults();
+        go_motor.setClosedLoopRampRate(1.0);
+        go_motor.setOpenLoopRampRate(0.5);
+        turn_motor.restoreFactoryDefaults();
 
         CANcoderConfiguration config = new CANcoderConfiguration();
         config.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Unsigned_0To1;
         encoder.getConfigurator().apply(config);
     }
 
+    public SwerveModuleState get_state(){
+        return new SwerveModuleState(
+            get_wheel_velocity(),
+            get_encoder()
+        );
+    }
+    public SwerveModulePosition get_position(){
+        return new SwerveModulePosition(
+            get_wheel_position(),
+            get_encoder()
+        );
+    }
+
+    public double get_wheel_velocity(){
+        return go_motor_encoder.getVelocity() * Constants.go_motor_rpm_to_meters_per_second;
+    }
+    public double get_wheel_position(){
+        return go_motor_encoder.getPosition() * Constants.wheel_rotations_to_meters_traveled;
+    }
+    public void zero_wheel_position(){
+        go_motor_encoder.setPosition(0.0);
+    }
+
     public Rotation2d get_encoder(){
-        return Rotation2d.fromDegrees(encoder.getAbsolutePosition().getValueAsDouble() * 360.0).minus(encoder_offset); // degrees
+        return Rotation2d.fromDegrees(encoder.getAbsolutePosition().getValueAsDouble() * 360.0).minus(encoder_offset);
     }
 
     public double get_PID(Rotation2d angle){
@@ -52,17 +83,17 @@ public class Wheel {
 
     public void set_turn_braking(boolean brake){
         if(brake){
-            turn_wheel.setIdleMode(IdleMode.kBrake);
+            turn_motor.setIdleMode(IdleMode.kBrake);
         }else{
-            turn_wheel.setIdleMode(IdleMode.kCoast);
+            turn_motor.setIdleMode(IdleMode.kCoast);
         }
     }
 
     public void set_move_braking(boolean brake){
         if(brake){
-            move_wheel.setIdleMode(IdleMode.kBrake);
+            go_motor.setIdleMode(IdleMode.kBrake);
         }else{
-            move_wheel.setIdleMode(IdleMode.kCoast);
+            go_motor.setIdleMode(IdleMode.kCoast);
         }
     }
     
@@ -87,7 +118,6 @@ public class Wheel {
     public void run( PolarVector desired_movement, double velocity_multiplier){
         if(desired_movement.length == 0.0){
             move_and_pivot(new PolarVector(last_rotation, 0.0));
-            return;
         }
         
         move_and_pivot(
@@ -155,28 +185,28 @@ public class Wheel {
 
     public void move_turn_motor( double power ){
         if (power > 1.0){
-            turn_wheel.set( 1.0 * Constants.rotational_dampen_multiplier );
+            turn_motor.set( 1.0 * Constants.wheel_rotation_multiplier );
             return;
         }
 
         if (power < -1.0){
-            turn_wheel.set( -1.0 * Constants.rotational_dampen_multiplier );
+            turn_motor.set( -1.0 * Constants.wheel_rotation_multiplier );
             return;
         }
 
-        turn_wheel.set( power * Constants.rotational_dampen_multiplier );
+        turn_motor.set( power * Constants.wheel_rotation_multiplier );
     }
 
     public void move_go_motor( double power ){
         if (power > 1.0){
-            move_wheel.set( 1.0 * Constants.rotational_dampen_multiplier );
+            go_motor.set( 1.0 * Constants.wheel_speed_multiplier );
             return;
         }
 
         if (power < -1.0){
-            move_wheel.set( -1.0 * Constants.rotational_dampen_multiplier );
+            go_motor.set( -1.0 * Constants.wheel_speed_multiplier );
             return;
         }
-        move_wheel.set( power * Constants.speed_dampen_multiplier); 
+        go_motor.set( power * Constants.wheel_speed_multiplier); 
     }
 }

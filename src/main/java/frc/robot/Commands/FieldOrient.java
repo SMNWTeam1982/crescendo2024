@@ -46,6 +46,6 @@ public class FieldOrient extends Command{
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return (Timer.getFPGATimestamp() - start_time >= 1.0);
+        return (Timer.getFPGATimestamp() - start_time >= 1.0); // gives up after 1 second
     }
 }

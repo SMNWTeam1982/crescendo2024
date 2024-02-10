@@ -41,41 +41,27 @@ public class Swerve extends Command {
 
       PolarVector field_oriented_velocity = new PolarVector(desired_velocity.angle.plus(gyro_angle), desired_velocity.length);
 
+      PolarVector[] wheel_velocities = drive.calculate_wheel_velocities(field_oriented_velocity, desired_angular_velocity);
+
       if(!maximize_velocity_function.get()){
-          front_right_wheel.run(front_right_desired_velocty, 1.0);
-          front_left_wheel.run(front_left_desired_velocty, 1.0);
-          back_left_wheel.run(back_left_desired_velocty, 1.0);
-          back_right_wheel.run(back_right_desired_velocty, 1.0);
+          drive.run_wheels(wheel_velocities, 1.0);
           return;
       }
 
       double highest = 0.0;
-      if(front_right_desired_velocty.length > highest){
-          highest = front_right_desired_velocty.length;
+      for(PolarVector wheel_velocity : wheel_velocities){
+        if( wheel_velocity.length > highest ){
+          highest = wheel_velocity.length;
+        }
       }
 
-      if(front_left_desired_velocty.length > highest){
-          highest = front_left_desired_velocty.length;
-      }
-
-      if(back_left_desired_velocty.length > highest){
-          highest = back_left_desired_velocty.length;
-      }
-
-      if(back_right_desired_velocty.length > highest){
-          highest = back_right_desired_velocty.length;
-      }
-      
       double multiplier = 1.0 / highest;
 
       if(highest < 0.01){
           multiplier = 1.0;
       }
       
-      front_right_wheel.run(front_right_desired_velocty, multiplier);
-      front_left_wheel.run(front_left_desired_velocty, multiplier);
-      back_left_wheel.run(back_left_desired_velocty, multiplier);
-      back_right_wheel.run(back_right_desired_velocty, multiplier);
+      drive.run_wheels(wheel_velocities, multiplier);
     }
 
     // Called once the command ends or is interrupted.

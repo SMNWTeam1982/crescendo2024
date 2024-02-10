@@ -1,6 +1,8 @@
 package frc.robot;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 
 public class Constants {
     public static final double wheel_p = 0.038;
@@ -19,7 +21,21 @@ public class Constants {
     public static final Rotation2d back_right_encoder_offset = Rotation2d.fromDegrees(140.449);//231.416015625;//229.921875;//230.625;//45.0;//230.625;
     public static final Rotation2d back_right_tangent = Rotation2d.fromDegrees(225.0);
 
-    public static final double wheel_rotations_to_meters_traveled = 1.0;
+    // 6.75 rotations of the motor = 1 rotation of the wheel
+    // wheel diameter is about 4 inches
+    // measured wheel circimference is 28.55cm or 0.2855m
+    // 1 rpm = 7.049382716E-4
+    public static final double wheel_rotations_to_meters_traveled = 0.2855;
+    public static final double go_motor_rpm_to_meters_per_second = 7.049382716E-4;
+
+    public static final Translation2d front_right_location = new Translation2d(0.2635,-0.2635);
+    public static final Translation2d front_left_location = new Translation2d(0.2635,0.2635);
+    public static final Translation2d back_left_location = new Translation2d(-0.2635,0.2635);
+    public static final Translation2d back_right_location = new Translation2d(-0.2635,-0.2635);
+
+    public static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(
+        front_left_location, front_right_location, back_left_location, back_right_location
+    );
 
     //public static final double[] idHeights = {48.125, 48.125, 53.88, 53.88, 50.125, 50.125, 53.88, 53.88, 48.125, 48.125, 48.81, 48.81, 48.81, 48.81, 48.81, 48.81};
 
@@ -51,8 +67,8 @@ public class Constants {
     public static final double speaker_id_height = 51.875;
     public static final double speaker_height = 78.25;
 
-    public static final double speed_dampen_multiplier = 0.4;//0.2
-    public static final double rotational_dampen_multiplier = 0.15;//0.25
+    public static final double wheel_speed_multiplier = 0.4;//0.2
+    public static final double wheel_rotation_multiplier = 0.15;//0.25
 
     public static final double angular_velocity_dampen_multiplier = 0.2;
 

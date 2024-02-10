@@ -3,7 +3,7 @@ package frc.robot.Utilities;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 public class PolarVector {
-    public Rotation2d angle; // degrees
+    public Rotation2d angle;
     public double length;
 
     public PolarVector(Rotation2d angle, double length){
