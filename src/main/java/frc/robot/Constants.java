@@ -55,11 +55,6 @@ public class Constants {
         public static final double auto_move_d = 0.01;
     }
 
-    public static final double winchArmP = 0.035;
-    public static final double winchArmI = 0.0;
-    public static final double winchArmD = 0.0;
-    public static final double extenLen = 0.0;
-
     public static final class LimeLightConstants{
         public static final double limelight_mount_angle = 0.0;
         public static final double limelight_lens_hight = 0.0;
@@ -72,6 +67,8 @@ public class Constants {
         public static final double pivot_i = 0.0;
         public static final double pivot_d = 0.0;
         public static final Rotation2d shooter_start_angle = Rotation2d.fromDegrees(65.0);
+        
+        public static final Rotation2d shooter_load_angle = Rotation2d.fromDegrees(65.0);
         // gear ratio is 100:1
         public static final double pivot_motor_rotations_to_shooter_rotations = 0.01;
 
@@ -97,6 +94,6 @@ public class Constants {
         public static final Rotation2d deployed_angle = Rotation2d.fromDegrees(180.0);
         public static final Rotation2d handoff_angle = Rotation2d.fromDegrees(0.0);
     }
-    public static final double speaker_id_height = 51.875;
-    public static final double speaker_height = 78.25;
+    // public static final double speaker_id_height = 51.875;
+    // public static final double speaker_height = 78.25;
 }

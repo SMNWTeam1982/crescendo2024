@@ -7,6 +7,7 @@ package frc.robot;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.Subsystems.Intake;
 import frc.robot.Subsystems.Shooter;
@@ -18,8 +19,8 @@ public class RobotContainer {
   public RobotContainer() {
     configureBindings();
   }
-  private Drive swerve_drive = new Drive();
-  private Shooter shooter = new Shooter(-1, -1, -1);
+  private final Drive swerve_drive = new Drive();
+  private final Shooter shooter = new Shooter(-1, -1, -1);
   private final Intake intake = new Intake(-1, -1);
   private final XboxController drive_controller = new XboxController(0);
   private final XboxController shooter_controller = new XboxController(1);
@@ -82,6 +83,7 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     
     return new SequentialCommandGroup(
+      new PrintCommand("starting auto"),
       new FieldOrient(swerve_drive)
     );
 

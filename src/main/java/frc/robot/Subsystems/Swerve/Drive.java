@@ -4,7 +4,6 @@ import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Subsystems.Limelight;
@@ -103,7 +102,7 @@ public class Drive extends SubsystemBase {
             front_right_wheel.get_state(),
             front_left_wheel .get_state(),
             back_left_wheel  .get_state(),
-            back_right_wheel .get_state(),
+            back_right_wheel .get_state()
         };
     }
     
@@ -112,7 +111,7 @@ public class Drive extends SubsystemBase {
             front_right_wheel.get_position(),
             front_left_wheel .get_position(),
             back_left_wheel  .get_position(),
-            back_right_wheel .get_position(),
+            back_right_wheel .get_position()
         };
     }
 

@@ -31,6 +31,7 @@ public class Intake extends SubsystemBase {
     pivot_motor = new CANSparkMax(pivot_motor_channel, MotorType.kBrushless);
     pivot_encoder = pivot_motor.getEncoder();
     intake_motor = new CANSparkMax(intake_motor_channel, MotorType.kBrushless);
+    pivot_encoder.setPosition(0.0);
   }
 
   @Override
