@@ -17,11 +17,10 @@ public class PID {
 		d = D;
 	}
 
-	public void update(double P, double I, double D, double sampleRate){
+	public void update(double P, double I, double D){
 		p = P;
 		i = I;
 		d = D;
-		this.sampleRate = sampleRate;
 	}
     
     //use this for a general PID output

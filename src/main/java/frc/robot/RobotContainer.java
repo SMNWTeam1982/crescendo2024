@@ -10,8 +10,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.Subsystems.Intake;
+import frc.robot.Subsystems.Limelight;
 import frc.robot.Subsystems.Shooter;
-import frc.robot.Subsystems.Swerve.Drive;
+import frc.robot.Subsystems.NewSwerve.SwerveSubsystem;
 import frc.robot.Utilities.PolarVector;
 import frc.robot.Commands.*;
 
@@ -19,7 +20,7 @@ public class RobotContainer {
   public RobotContainer() {
     configureBindings();
   }
-  private final Drive swerve_drive = new Drive();
+  private final SwerveSubsystem swerve_drive = new SwerveSubsystem();
   private final Shooter shooter = new Shooter(-1, -1, -1);
   private final Intake intake = new Intake(-1, -1);
   private final XboxController drive_controller = new XboxController(0);
@@ -47,19 +48,16 @@ public class RobotContainer {
           double x = drive_controller.getRightX();
           if(x < 0.2){x = 0.0;}
           return x;
-        },
-        () -> {
-          return (drive_controller.getRightTriggerAxis() > 0.1);
         }
       )
     );
     shooter.setDefaultCommand(
       shooter.shooter_command(
         () -> {
-          return shooter_controller.getAButton();
+          return shooter_controller.getRightY();
         },
         () -> {
-          return Constants.ShooterConstants.shooter_start_angle; // math not implemented yet
+          return Limelight.speaker_angle(); // math not implemented yet
         }
       )
     );

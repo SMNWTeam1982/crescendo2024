@@ -4,15 +4,15 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Subsystems.Limelight;
-import frc.robot.Subsystems.Swerve.Drive;
+import frc.robot.Subsystems.NewSwerve.SwerveSubsystem;
 
 public class FieldOrient extends Command{
 
-    private final Drive drive;
+    private final SwerveSubsystem drive;
 
     private double start_time = Timer.getFPGATimestamp();
 
-    public FieldOrient(Drive drive) {
+    public FieldOrient(SwerveSubsystem drive) {
         this.drive = drive;
     
         addRequirements(drive);

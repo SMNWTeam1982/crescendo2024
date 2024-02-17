@@ -20,6 +20,7 @@ public class Intake extends SubsystemBase {
   private final CANSparkMax pivot_motor;
   private final RelativeEncoder pivot_encoder;
   private final CANSparkMax intake_motor;
+  //private final DigitalInput input = new DigitalInput(0);
   private final PID pivot_pid = new PID(
     Constants.IntakeConstants.pivot_p,
     Constants.IntakeConstants.pivot_i,

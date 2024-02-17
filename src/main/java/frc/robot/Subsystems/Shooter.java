@@ -10,6 +10,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -21,7 +22,7 @@ public class Shooter extends SubsystemBase {
   private final RelativeEncoder pivot_encoder;
   private final CANSparkMax upper_shoot_motor;
   private final CANSparkMax lower_shoot_motor;
-  private Rotation2d target_angle = Constants.ShooterConstants.shooter_start_angle;
+  //private Rotation2d target_angle = Constants.ShooterConstants.shooter_start_angle;
   private final PID pivot_pid = new PID(
     Constants.ShooterConstants.pivot_p,
     Constants.ShooterConstants.pivot_i,
@@ -38,16 +39,14 @@ public class Shooter extends SubsystemBase {
     pivot_encoder.setPosition(0.0);
   }
 
-  public Command shooter_command(Supplier<Boolean> shoot_function, Supplier<Rotation2d> target_angle_function){
+  public Command shooter_command(Supplier<Double> shoot_function, Supplier<Rotation2d> target_angle_function){
     return run(
       () -> {
-        if(shoot_function.get()){
-          set_shoot_motors(1.0);
-        }
 
-        target_angle = target_angle_function.get();
+        set_shoot_motors(shoot_function.get());
 
-        set_pivot_motor(get_pid());
+        set_pivot_motor(pivot_pid.out(get_shooter_angle().getDegrees(), target_angle_function.get().getDegrees(), 0.0));
+        
       }
     );
   }
@@ -57,8 +56,8 @@ public class Shooter extends SubsystemBase {
     // This method will be called once per scheduler run
   }
 
-  public double get_pid(){
-    return pivot_pid.out(get_shooter_angle().getDegrees(), target_angle.getDegrees(), 0.0);
+  public static Rotation2d calculate_shooter_angle(Pose2d robot_pose){
+    
   }
 
   public Rotation2d get_shooter_angle(){
