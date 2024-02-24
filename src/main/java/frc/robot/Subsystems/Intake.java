@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Utilities.PID;
+import edu.wpi.first.math.MathUtil;
 
 public class Intake extends SubsystemBase {
   private final CANSparkMax pivot_motor;
@@ -31,7 +32,7 @@ public class Intake extends SubsystemBase {
     pivot_motor = new CANSparkMax(pivot_motor_channel, MotorType.kBrushless);
     pivot_encoder = pivot_motor.getEncoder();
     intake_motor = new CANSparkMax(intake_motor_channel, MotorType.kBrushless);
-    pivot_encoder.setPosition(0.0);
+    pivot_encoder.setPosition(Constants.IntakeConstants.intake_starting_position.getRotations());
   }
 
   @Override
@@ -47,6 +48,8 @@ public class Intake extends SubsystemBase {
         target_angle = rotation_function.get();
 
         set_pivot_motor(get_pid());
+
+
       }
     );
   }
@@ -67,7 +70,15 @@ public class Intake extends SubsystemBase {
   }
 
   public Rotation2d get_intake_angle(){
-    return Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations);
+
+    return Rotation2d.fromDegrees(
+      MathUtil.inputModulus(
+        Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations)
+        .plus(Constants.IntakeConstants.intake_starting_position).getDegrees(),
+        0.0,
+        360.0
+      )
+    );
   }
 
   public void set_pivot_motor(double speed){

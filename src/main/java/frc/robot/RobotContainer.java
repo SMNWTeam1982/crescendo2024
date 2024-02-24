@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.Subsystems.Intake;
+import frc.robot.Subsystems.Limelight;
 import frc.robot.Subsystems.Shooter;
 import frc.robot.Subsystems.Swerve.Drive;
 import frc.robot.Utilities.PolarVector;
@@ -20,8 +21,8 @@ public class RobotContainer {
     configureBindings();
   }
   private final Drive swerve_drive = new Drive();
-  private final Shooter shooter = new Shooter(-1, -1, -1);
-  private final Intake intake = new Intake(-1, -1);
+  private final Shooter shooter = new Shooter(13, 11, 12);
+  private final Intake intake = new Intake(9, 10);
   private final XboxController drive_controller = new XboxController(0);
   private final XboxController shooter_controller = new XboxController(1);
 
@@ -30,7 +31,7 @@ public class RobotContainer {
       new Swerve(
         swerve_drive,
         () -> {
-          double x = drive_controller.getLeftX();
+          double x = -drive_controller.getLeftX();
           double y = drive_controller.getLeftY();
           double trigger = drive_controller.getRightTriggerAxis();
           double speed = Math.sqrt(x * x + y * y);
@@ -45,11 +46,14 @@ public class RobotContainer {
         },
         () -> {
           double x = drive_controller.getRightX();
-          if(x < 0.2){x = 0.0;}
+          if(Math.abs(x) < 0.2){x = 0.0;}
           return x;
         },
         () -> {
           return (drive_controller.getRightTriggerAxis() > 0.1);
+        },
+        () -> {
+          return drive_controller.getAButton();
         }
       )
     );
@@ -59,7 +63,7 @@ public class RobotContainer {
           return shooter_controller.getAButton();
         },
         () -> {
-          return Constants.ShooterConstants.shooter_start_angle; // math not implemented yet
+          return Constants.ShooterConstants.shooter_load_angle.plus(Rotation2d.fromDegrees(0.0)/*Limelight.get_speaker_angle()*/); // math not implemented yet
         }
       )
     );
@@ -73,7 +77,7 @@ public class RobotContainer {
           if(shooter_controller.getBButton()){
             return Constants.IntakeConstants.deployed_angle;
           }else{
-            return Constants.IntakeConstants.handoff_angle;
+            return Constants.IntakeConstants.handoff_angle.plus(Rotation2d.fromDegrees(shooter_controller.getRightY() * 5.0));
           }
         }
       )

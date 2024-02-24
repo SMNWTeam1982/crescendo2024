@@ -21,7 +21,7 @@ public class Shooter extends SubsystemBase {
   private final RelativeEncoder pivot_encoder;
   private final CANSparkMax upper_shoot_motor;
   private final CANSparkMax lower_shoot_motor;
-  private Rotation2d target_angle = Constants.ShooterConstants.shooter_start_angle;
+  public Rotation2d target_angle = Constants.ShooterConstants.shooter_start_angle;
   private final PID pivot_pid = new PID(
     Constants.ShooterConstants.pivot_p,
     Constants.ShooterConstants.pivot_i,
@@ -31,11 +31,20 @@ public class Shooter extends SubsystemBase {
   /** Creates a new Shooter. */
   public Shooter(int pivot_motor_channel, int upper_shoot_motor_channel, int lower_shoot_motor_channel) {
     upper_shoot_motor = new CANSparkMax(upper_shoot_motor_channel, MotorType.kBrushless);
+
     lower_shoot_motor = new CANSparkMax(lower_shoot_motor_channel, MotorType.kBrushless);
 
     pivot_motor = new CANSparkMax(pivot_motor_channel, MotorType.kBrushless);
+
+
+    upper_shoot_motor.restoreFactoryDefaults();
+    upper_shoot_motor.setOpenLoopRampRate(1.0);
+    upper_shoot_motor.setClosedLoopRampRate(1.0);
+    lower_shoot_motor.restoreFactoryDefaults();
+    lower_shoot_motor.setOpenLoopRampRate(1.0);
+    lower_shoot_motor.setClosedLoopRampRate(1.0);
     pivot_encoder = pivot_motor.getEncoder();
-    pivot_encoder.setPosition(0.0);
+    pivot_encoder.setPosition(Constants.ShooterConstants.shooter_start_angle.getRotations());
   }
 
   public Command shooter_command(Supplier<Boolean> shoot_function, Supplier<Rotation2d> target_angle_function){
@@ -43,6 +52,8 @@ public class Shooter extends SubsystemBase {
       () -> {
         if(shoot_function.get()){
           set_shoot_motors(1.0);
+        }else{
+          set_shoot_motors(0.0);
         }
 
         target_angle = target_angle_function.get();
@@ -57,15 +68,13 @@ public class Shooter extends SubsystemBase {
     // This method will be called once per scheduler run
   }
 
-<<<<<<< Updated upstream
   public double get_pid(){
     return pivot_pid.out(get_shooter_angle().getDegrees(), target_angle.getDegrees(), 0.0);
   }
-=======
->>>>>>> Stashed changes
 
   public Rotation2d get_shooter_angle(){
-    return Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.ShooterConstants.pivot_motor_rotations_to_shooter_rotations);
+    return Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.ShooterConstants.pivot_motor_rotations_to_shooter_rotations)
+    .plus(Constants.ShooterConstants.shooter_start_angle);
   }
 
   public void set_shoot_motors(double speed){
@@ -75,8 +84,8 @@ public class Shooter extends SubsystemBase {
       return;
     }
     if(speed < -1.0){
-      upper_shoot_motor.set(-1.0 * Constants.ShooterConstants.upper_shoot_motor_multiplier);
-      lower_shoot_motor.set(-1.0 * Constants.ShooterConstants.lower_shoot_motor_multiplier);
+      upper_shoot_motor.set(1.0 * Constants.ShooterConstants.upper_shoot_motor_multiplier);
+      lower_shoot_motor.set(1.0 * Constants.ShooterConstants.lower_shoot_motor_multiplier);
       return;
     }
     upper_shoot_motor.set(speed * Constants.ShooterConstants.upper_shoot_motor_multiplier);

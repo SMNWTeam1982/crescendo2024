@@ -4,6 +4,7 @@ import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Subsystems.Limelight;
@@ -68,6 +69,10 @@ public class Drive extends SubsystemBase {
         back_right_wheel.set_move_braking(braking);
     }
 
+    public void zero_gyro(){
+        gyro.zero_angle();
+    }
+
     public void set_gyro_offset(Rotation2d offset){
         gyro.set_offset(offset);
     }
@@ -123,6 +128,8 @@ public class Drive extends SubsystemBase {
             pose_estimator.addVisionMeasurement(limelight_results.pose, limelight_results.timestamp, limelight_results.standard_deviation);
         }
         pose_estimator.update(get_gyro_angle(), get_module_positions());
+
+        SmartDashboard.putString("robot pose",pose_estimator.getEstimatedPosition().toString());
     }
 
     @Override

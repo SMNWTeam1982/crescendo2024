@@ -7,6 +7,7 @@ package frc.robot.Commands;
 import java.util.function.Supplier;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Subsystems.Swerve.Drive;
 import frc.robot.Utilities.PolarVector;
@@ -17,13 +18,21 @@ public class Swerve extends Command {
   private final Supplier<PolarVector> linear_velocity_function;
   private final Supplier<Double> angular_velocity_function;
   private final Supplier<Boolean> maximize_velocity_function; 
+  private final Supplier<Boolean> zero_gyro_function;
 
   /** Creates a new Swerve. */
-    public Swerve(Drive drive, Supplier<PolarVector> linear_velocty_function, Supplier<Double> angular_veloctity_function, Supplier<Boolean> maximize_velocity_function) {
+    public Swerve(
+        Drive drive,
+        Supplier<PolarVector> linear_velocty_function,
+        Supplier<Double> angular_veloctity_function,
+        Supplier<Boolean> maximize_velocity_function,
+        Supplier<Boolean> zero_gyro_function
+      ) {
       this.drive = drive;
       this.linear_velocity_function = linear_velocty_function;
       this.angular_velocity_function = angular_veloctity_function;
       this.maximize_velocity_function = maximize_velocity_function;
+      this.zero_gyro_function = zero_gyro_function;
       addRequirements(drive);
       // Use addRequirements() here to declare subsystem dependencies.
     }
@@ -35,6 +44,11 @@ public class Swerve extends Command {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
+
+      if(zero_gyro_function.get()){
+        drive.zero_gyro();
+      }
+
       PolarVector desired_velocity = linear_velocity_function.get();
       double desired_angular_velocity = angular_velocity_function.get();
       boolean maximize_velocity = maximize_velocity_function.get();
@@ -43,7 +57,9 @@ public class Swerve extends Command {
       }
       Rotation2d gyro_angle = drive.get_gyro_angle();
 
-      PolarVector field_oriented_velocity = new PolarVector(desired_velocity.angle.plus(gyro_angle), desired_velocity.length);
+      SmartDashboard.putNumber("robot heading", drive.get_gyro_angle().getDegrees());
+
+      PolarVector field_oriented_velocity = new PolarVector(desired_velocity.angle.minus(gyro_angle), desired_velocity.length);
 
       PolarVector[] wheel_velocities = drive.calculate_wheel_velocities(field_oriented_velocity, desired_angular_velocity);
 
@@ -66,6 +82,7 @@ public class Swerve extends Command {
       }
       
       drive.run_wheels(wheel_velocities, multiplier);
+
     }
 
     // Called once the command ends or is interrupted.

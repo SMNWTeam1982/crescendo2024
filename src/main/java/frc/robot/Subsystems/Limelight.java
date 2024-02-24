@@ -9,6 +9,11 @@ import frc.robot.Utilities.LimelightHelpers;
 import frc.robot.Utilities.Tracking;
 
 public class Limelight {
+    public static Rotation2d get_speaker_angle(){
+        set_pipeline(Constants.LimeLightConstants.speaker_tracking_channel);
+        //if ( == Double.isNaN(get_y()))
+        return Rotation2d.fromDegrees(get_y() * Constants.LimeLightConstants.speaker_angle_multiplier);
+    }
 
     public static boolean visible_speaker(){
         set_pipeline(Constants.LimeLightConstants.speaker_tracking_channel);
