@@ -57,9 +57,12 @@ public class Shooter extends SubsystemBase {
     // This method will be called once per scheduler run
   }
 
+<<<<<<< Updated upstream
   public double get_pid(){
     return pivot_pid.out(get_shooter_angle().getDegrees(), target_angle.getDegrees(), 0.0);
   }
+=======
+>>>>>>> Stashed changes
 
   public Rotation2d get_shooter_angle(){
     return Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.ShooterConstants.pivot_motor_rotations_to_shooter_rotations);
