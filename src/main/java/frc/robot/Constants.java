@@ -8,8 +8,8 @@ public class Constants {
     public static final class DriveConstants {
         
         public static final double wheel_speed_multiplier = 0.4;//0.2
-        public static final double wheel_rotation_multiplier = 0.15;//0.25
-        public static final double angular_velocity_multiplier = 0.2;
+        public static final double wheel_rotation_multiplier = 0.25;//0.25
+        public static final double angular_velocity_multiplier = 0.4;
 
         public static final double wheel_rotation_p = 0.038;
         public static final double wheel_rotation_i = 0.0;
@@ -48,9 +48,6 @@ public class Constants {
         );
     }
 
-
-    //public static final double[] idHeights = {48.125, 48.125, 53.88, 53.88, 50.125, 50.125, 53.88, 53.88, 48.125, 48.125, 48.81, 48.81, 48.81, 48.81, 48.81, 48.81};
-
     public static final class AutoConstants{
         public static final double target_tracking_p = -0.05;
         public static final double target_tracking_i = 0.0;
@@ -62,26 +59,26 @@ public class Constants {
     }
 
     public static final class LimeLightConstants{
-        public static final double limelight_mount_angle = 0.0;
-        public static final double limelight_lens_hight = 0.0;
+        public static final double speaker_angle_multiplier = 0.8;
         public static final int field_movement_channel = 0;
         public static final int speaker_tracking_channel = 1;
+        public static final int speaker_aiming_channel = 2;
     }
 
     public static final class ShooterConstants{
-        public static final double pivot_p = 1.0;
+        public static final double pivot_p = 0.015;
         public static final double pivot_i = 0.0;
         public static final double pivot_d = 0.0;
-        public static final Rotation2d shooter_start_angle = Rotation2d.fromDegrees(65.0);
+        public static final Rotation2d shooter_start_angle = Rotation2d.fromDegrees(68.0);
         
-        public static final Rotation2d shooter_load_angle = Rotation2d.fromDegrees(65.0);
+        public static final Rotation2d shooter_load_angle = Rotation2d.fromDegrees(45.0);
         // gear ratio is 100:1
         public static final double pivot_motor_rotations_to_shooter_rotations = 0.01;
 
         public static final double pivot_motor_multiplier = 1.0;
 
         public static final double upper_shoot_motor_multiplier = 1.0;
-        public static final double lower_shoot_motor_multiplier = 1.0;
+        public static final double lower_shoot_motor_multiplier = -1.0;
 
         public static final double shooter_pivot_point_height = 0.46; // meters
 
@@ -89,18 +86,18 @@ public class Constants {
     }
 
     public static final class IntakeConstants{
-        public static final double pivot_p = 1.0;
+        public static final double pivot_p = 0.2;
         public static final double pivot_i = 0.0;
         public static final double pivot_d = 0.0;
-        public static final Rotation2d intake_starting_position = Rotation2d.fromDegrees(0.0);
+        public static final Rotation2d intake_starting_position = Rotation2d.fromDegrees(10.0);
         //gear ratio is 80:1
         public static final double pivot_motor_rotations_to_intake_rotations = 0.0125;
 
-        public static final double pivot_motor_multiplier = 1.0;
-        public static final double intake_multiplier = 1.0;
+        public static final double pivot_motor_multiplier = 0.3;
+        public static final double intake_multiplier = 0.5;
 
-        public static final Rotation2d deployed_angle = Rotation2d.fromDegrees(180.0);
-        public static final Rotation2d handoff_angle = Rotation2d.fromDegrees(0.0);
+        public static final Rotation2d deployed_angle = Rotation2d.fromDegrees(210.0);
+        public static final Rotation2d handoff_angle = Rotation2d.fromDegrees(25.0);
     }
     public static final double speaker_id_height = 51.875;
     public static final double speaker_height = 78.25;

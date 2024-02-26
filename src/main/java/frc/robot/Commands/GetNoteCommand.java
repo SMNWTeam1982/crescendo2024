@@ -1,5 +1,5 @@
 package frc.robot.Commands;
-
+/*
 import org.photonvision.PhotonCamera;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -13,8 +13,9 @@ import frc.robot.Subsystems.Intake;
 import frc.robot.Subsystems.NewSwerve.SwerveSubsystem;
 import frc.robot.Utilities.PID;
 import frc.robot.Utilities.PolarVector;
-
-public class GetNoteCommand extends Command {
+*/
+public class GetNoteCommand/*extends Command */{
+    /*
     
     private final SwerveSubsystem drive;
     private final Intake intake;
@@ -30,7 +31,7 @@ public class GetNoteCommand extends Command {
     PhotonCamera camera = new PhotonCamera("photonvision");
 
     private final Command move_command;
-    private final Command intake_command;
+    //private final Command intake_command;
 
     public GetNoteCommand(SwerveSubsystem drive, Intake intake) {
         this.drive = drive;
@@ -52,10 +53,6 @@ public class GetNoteCommand extends Command {
             }
         );
 
-        intake_command = this.intake.get_intake_command(
-            () -> {return 1.0;},
-            () -> {return Constants.IntakeConstants.deployed_angle;}
-        );
         // Use addRequirements() here to declare subsystem dependencies.
     }
   
@@ -65,7 +62,7 @@ public class GetNoteCommand extends Command {
         var result = camera.getLatestResult();
         if (result.hasTargets() == true){
             CommandScheduler.getInstance().schedule(move_command);
-            CommandScheduler.getInstance().schedule(intake_command);
+            //CommandScheduler.getInstance().schedule(intake_command);
         }
     }
   
@@ -82,7 +79,7 @@ public class GetNoteCommand extends Command {
     @Override
     public void end(boolean interrupted) {
         CommandScheduler.getInstance().cancel(move_command);
-        CommandScheduler.getInstance().cancel(intake_command);
+        //CommandScheduler.getInstance().cancel(intake_command);
     }
 
     // Returns true when the command should end.
@@ -90,4 +87,5 @@ public class GetNoteCommand extends Command {
     public boolean isFinished() {
        return false;
     }
+    */
 }

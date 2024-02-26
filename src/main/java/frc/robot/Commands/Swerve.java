@@ -6,7 +6,8 @@ package frc.robot.Commands;
 
 import java.util.function.Supplier;
 
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.Subsystems.NewSwerve.SwerveSubsystem;
@@ -17,36 +18,73 @@ public class Swerve extends Command {
   private final SwerveSubsystem drive;
   private final Supplier<PolarVector> linear_velocity_function;
   private final Supplier<Double> angular_velocity_function;
+  private final Supplier<Boolean> maximize_velocity_function; 
+  private final Supplier<Boolean> zero_gyro_function;
 
   /** Creates a new Swerve. */
-  public Swerve(SwerveSubsystem drive, Supplier<PolarVector> linear_velocty_function, Supplier<Double> angular_veloctity_function) {
-    this.drive = drive;
-    this.linear_velocity_function = linear_velocty_function;
-    this.angular_velocity_function = angular_veloctity_function;
-    addRequirements(drive);
-    // Use addRequirements() here to declare subsystem dependencies.
-  }
+    public Swerve(
+        Drive drive,
+        Supplier<PolarVector> linear_velocty_function,
+        Supplier<Double> angular_veloctity_function,
+        Supplier<Boolean> maximize_velocity_function,
+        Supplier<Boolean> zero_gyro_function
+      ) {
+      this.drive = drive;
+      this.linear_velocity_function = linear_velocty_function;
+      this.angular_velocity_function = angular_veloctity_function;
+      this.maximize_velocity_function = maximize_velocity_function;
+      this.zero_gyro_function = zero_gyro_function;
+      addRequirements(drive);
+      // Use addRequirements() here to declare subsystem dependencies.
+    }
 
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {}
 
-  // Called every time the scheduler runs while the command is scheduled.
-  @Override
-  public void execute() {
-    PolarVector linear_velocity = linear_velocity_function.get();
-    linear_velocity.length *= Constants.DriveConstants.wheel_max_speed_meters_per_second;
-    double angular_velocity = angular_velocity_function.get() * Constants.DriveConstants.angular_velocity_multiplier;
+    // Called every time the scheduler runs while the command is scheduled.
+    @Override
+    public void execute() {
 
-    ChassisSpeeds chassis_speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-      linear_velocity.x(),
-      linear_velocity.y(),
-      angular_velocity,
-      drive.get_gyro_angle()
-    );
+      if(zero_gyro_function.get()){
+        drive.zero_gyro();
+      }
 
-    drive.set_chassis_speed(chassis_speeds);
-  }
+      PolarVector desired_velocity = linear_velocity_function.get();
+      double desired_angular_velocity = angular_velocity_function.get();
+      boolean maximize_velocity = maximize_velocity_function.get();
+      if(desired_velocity.length < 0.01){
+        maximize_velocity = false;
+      }
+      Rotation2d gyro_angle = drive.get_gyro_angle();
+
+      SmartDashboard.putNumber("robot heading", drive.get_gyro_angle().getDegrees());
+
+      PolarVector field_oriented_velocity = new PolarVector(desired_velocity.angle.minus(gyro_angle), desired_velocity.length);
+
+      PolarVector[] wheel_velocities = drive.calculate_wheel_velocities(field_oriented_velocity, desired_angular_velocity);
+
+      if(!maximize_velocity){
+          drive.run_wheels(wheel_velocities, 1.0);
+          return;
+      }
+
+      double highest = 0.0;
+      for(PolarVector wheel_velocity : wheel_velocities){
+        if( wheel_velocity.length > highest ){
+          highest = wheel_velocity.length;
+        }
+      }
+
+      double multiplier = 1.0 / highest;
+
+      if(highest < 0.01){
+          multiplier = 1.0;
+      }
+      
+      drive.run_wheels(wheel_velocities, multiplier);
+
+    }
 
   // Called once the command ends or is interrupted.
   @Override
