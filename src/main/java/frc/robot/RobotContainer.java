@@ -14,6 +14,7 @@ import frc.robot.Subsystems.Limelight;
 import frc.robot.Subsystems.Shooter;
 import frc.robot.Subsystems.Swerve.Drive;
 import frc.robot.Utilities.PolarVector;
+import frc.robot.Utilities.Vector;
 import frc.robot.Commands.*;
 
 public class RobotContainer {
@@ -31,37 +32,21 @@ public class RobotContainer {
       new Swerve(
         swerve_drive,
         () -> {
-          double x = -drive_controller.getLeftX();
-          double y = drive_controller.getLeftY();
-          double trigger = drive_controller.getRightTriggerAxis();
-          double speed = Math.sqrt(x * x + y * y);
-          if(speed > 1.0){speed = 1.0;}
-          if(speed < 0.1){speed = 0.0;}
-          if(trigger > 0.1){speed /= 3.0;}
-          PolarVector linear_velocity = new PolarVector(
-            Rotation2d.fromRadians(Math.atan2(y,x)),
-            speed
-          );
-          return linear_velocity;
+          return new Vector(-drive_controller.getLeftX(), drive_controller.getLeftY());
         },
         () -> {
           double x = drive_controller.getRightX();
           if(Math.abs(x) < 0.2){x = 0.0;}
           return x;
         },
-        () -> {
-          return (drive_controller.getRightTriggerAxis() > 0.1);
-        },
-        () -> {
-          return drive_controller.getAButton();
-        }
+        () -> {return (drive_controller.getRightTriggerAxis() < 0.1);},
+        // () -> {return drive_controller.getAButton();},
+        () -> {return drive_controller.getYButton();}
       )
     );
     shooter.setDefaultCommand(
       shooter.shooter_command(
-        () -> {
-          return shooter_controller.getAButton();
-        },
+        () -> {return (shooter_controller.getRightTriggerAxis() > 0.1);},
         () -> {
           return Constants.ShooterConstants.shooter_load_angle.plus(Rotation2d.fromDegrees(0.0)/*Limelight.get_speaker_angle()*/); // math not implemented yet
         }
@@ -74,11 +59,16 @@ public class RobotContainer {
           return shooter_controller.getLeftY();
         },
         () -> {
-          if(shooter_controller.getBButton()){
-            return Constants.IntakeConstants.deployed_angle;
-          }else{
-            return Constants.IntakeConstants.handoff_angle.plus(Rotation2d.fromDegrees(shooter_controller.getRightY() * 5.0));
-          }
+          
+          // if(shooter_controller.getBButtonReleased()){
+          //   return Constants.IntakeConstants.deployed_angle.plus(Rotation2d.fromDegrees(shooter_controller.getRightY() * 5.0));
+          // }else{
+          //   return Constants.IntakeConstants.handoff_angle.plus(Rotation2d.fromDegrees(shooter_controller.getRightY() * 5.0));
+          // }
+          return shooter_controller.getBButtonReleased();
+        },
+        () -> {
+          return shooter_controller.getYButton();
         }
       )
     );

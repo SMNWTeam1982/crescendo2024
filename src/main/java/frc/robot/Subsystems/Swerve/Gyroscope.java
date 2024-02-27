@@ -24,4 +24,8 @@ public class Gyroscope {
     public void zero_angle(){
         offset = gyro.getRotation2d();
     }
+
+    public void field_orient(Rotation2d vision_input){
+        offset = gyro.getRotation2d().minus(vision_input);
+    }
 }

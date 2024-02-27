@@ -28,15 +28,9 @@ public class FieldOrient extends Command{
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        if(!Limelight.visible_speaker()){
-            return;
+        if(drive.attempt_field_orient()){
+            end(false);
         }
-
-        Rotation2d robot_rotation = Limelight.get_field_rotation();
-
-        drive.set_gyro_offset(robot_rotation);
-
-        end(false);
     }
 
     // Called once the command ends or is interrupted.

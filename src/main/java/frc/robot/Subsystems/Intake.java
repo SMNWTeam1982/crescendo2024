@@ -11,8 +11,12 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants;
 import frc.robot.Utilities.PID;
 import edu.wpi.first.math.MathUtil;
@@ -27,6 +31,7 @@ public class Intake extends SubsystemBase {
     Constants.IntakeConstants.pivot_d
   );
   private Rotation2d target_angle = Constants.IntakeConstants.intake_starting_position;
+  private boolean intake_deployed = false;
   /** Creates a new Intake. */
   public Intake(int pivot_motor_channel, int intake_motor_channel) {
     pivot_motor = new CANSparkMax(pivot_motor_channel, MotorType.kBrushless);
@@ -38,18 +43,33 @@ public class Intake extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+    SmartDashboard.putNumber("intake error",target_angle.getDegrees() - get_intake_angle().getDegrees());
   }
 
-  public Command get_intake_command(Supplier<Double> intake_function, Supplier<Rotation2d> rotation_function){
+  public Command get_intake_command(Supplier<Double> intake_function, Supplier<Boolean> toggle_deploy_function, Supplier<Boolean> zero_position_function){
     return run(
       () -> {
         set_intake(intake_function.get());
 
-        target_angle = rotation_function.get();
+        if(toggle_deploy_function.get()){
+          intake_deployed = !intake_deployed;
+        }
+        
+        if(intake_deployed){
+          //target_angle = Constants.IntakeConstants.deployed_angle.plus(Rotation2d.fromDegrees(shooter_controller.getRightY() * 5.0));
+          target_angle = Constants.IntakeConstants.deployed_angle;
+        } else{
+          target_angle = Constants.IntakeConstants.handoff_angle;
+        }
 
         set_pivot_motor(get_pid());
 
+        if(zero_position_function.get()){
 
+          double time = Timer.getFPGATimestamp();
+          while(Timer.getFPGATimestamp() < time+1.0);
+          pivot_encoder.setPosition(Constants.IntakeConstants.intake_starting_position.getRotations());
+        }
       }
     );
   }
@@ -66,7 +86,8 @@ public class Intake extends SubsystemBase {
   }
 
   public double get_pid(){
-    return pivot_pid.out(get_intake_angle().getDegrees(), target_angle.getDegrees(), 0.0);
+    double normal_target_angle = MathUtil.inputModulus(target_angle.getDegrees(), 0.0, 360.0);
+    return pivot_pid.out(get_intake_angle().getDegrees(), normal_target_angle, 0.0);
   }
 
   public Rotation2d get_intake_angle(){

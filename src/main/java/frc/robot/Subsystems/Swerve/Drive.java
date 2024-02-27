@@ -1,6 +1,8 @@
 package frc.robot.Subsystems.Swerve;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -73,13 +75,19 @@ public class Drive extends SubsystemBase {
         gyro.zero_angle();
     }
 
-    public void set_gyro_offset(Rotation2d offset){
-        gyro.set_offset(offset);
-    }
-
     public Rotation2d get_gyro_angle(){
         return gyro.get_angle();
     }
+
+    public boolean attempt_field_orient(){
+        boolean visible_target = Limelight.visible_tracking_target();
+        if(visible_target){
+            Tracking limelight_results = Limelight.get_field_tracking();
+            gyro.field_orient(limelight_results.pose.getRotation());
+        }
+        return visible_target;
+    }
+    
 
     /**
      * @param desired_robot_linear_velocity
@@ -120,13 +128,19 @@ public class Drive extends SubsystemBase {
         };
     }
 
+    public Pose2d get_robot_pose(){
+        return pose_estimator.getEstimatedPosition();
+    }
+
     @Override
     public void periodic() {
         // This method will be called once per scheduler run
+
         if(Limelight.visible_tracking_target()){
             Tracking limelight_results = Limelight.get_field_tracking();
             pose_estimator.addVisionMeasurement(limelight_results.pose, limelight_results.timestamp, limelight_results.standard_deviation);
         }
+
         pose_estimator.update(get_gyro_angle(), get_module_positions());
 
         SmartDashboard.putString("robot pose",pose_estimator.getEstimatedPosition().toString());
