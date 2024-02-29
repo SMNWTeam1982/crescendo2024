@@ -6,6 +6,7 @@ package frc.robot.Commands;
 
 import java.util.function.Supplier;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -18,24 +19,23 @@ import frc.robot.Utilities.Vector;
 public class Swerve extends Command {
 
   private final Drive drive;
-  private final Supplier<Vector> joystick_input_function;
+  private final Supplier<PolarVector> desired_velocity_function;
   private final Supplier<Double> angular_velocity_function;
   private final Supplier<Boolean> maximize_velocity_function; 
   //private final Supplier<Boolean> zero_gyro_function;
   private final Supplier<Boolean> field_orient_function;
-  private boolean started_on_blue_side = false;
 
   /** Creates a new Swerve. */
     public Swerve(
         Drive drive,
-        Supplier<Vector> joystick_input_function,
+        Supplier<PolarVector> desired_velocity_function,
         Supplier<Double> angular_veloctity_function,
         Supplier<Boolean> maximize_velocity_function,
         //Supplier<Boolean> zero_gyro_function,
         Supplier<Boolean> field_orient_function
       ) {
       this.drive = drive;
-      this.joystick_input_function = joystick_input_function;
+      this.desired_velocity_function = desired_velocity_function;
       this.angular_velocity_function = angular_veloctity_function;
       this.maximize_velocity_function = maximize_velocity_function;
       //this.zero_gyro_function = zero_gyro_function;
@@ -55,27 +55,8 @@ public class Swerve extends Command {
       //   drive.zero_gyro();
       // }
 
-      Vector inputs = joystick_input_function.get();
-
-      double y = inputs.y;
-      if(started_on_blue_side){
-        y = -y;
-      }
-      double x = inputs.x;
-      if(started_on_blue_side){
-        x = -x;
-      }
-      double speed = Math.sqrt(x * x + y * y);
-      if(speed > 1.0){speed = 1.0;}
-      if(speed < 0.1){speed = 0.0;}
-
-      PolarVector desired_velocity = new PolarVector(
-        Rotation2d.fromRadians(Math.atan2(y,x)).plus(Rotation2d.fromDegrees(90.0)),
-        speed
-      );
-
       if(field_orient_function.get()){
-        started_on_blue_side = Limelight.get_field_position().getX() < 0.0;
+        drive.attempt_set_team();
         drive.attempt_field_orient();
       }
 
@@ -83,20 +64,23 @@ public class Swerve extends Command {
 
       boolean maximize_velocity = maximize_velocity_function.get();
 
-      if(desired_velocity.length < 0.01){
+      PolarVector desired_velocity = desired_velocity_function.get();
+
+      if(desired_velocity.length < 0.05){
         maximize_velocity = false;
       }
-      Rotation2d robot_rotation = drive.get_gyro_angle();
 
-      SmartDashboard.putNumber("robot heading", drive.get_gyro_angle().getDegrees());
+      Rotation2d robot_rotation = drive.get_driver_angle();
+
+      SmartDashboard.putNumber("robot driver heading", drive.get_driver_angle().getDegrees());
 
       PolarVector field_oriented_velocity = new PolarVector(desired_velocity.angle.minus(robot_rotation), desired_velocity.length);
 
       PolarVector[] wheel_velocities = drive.calculate_wheel_velocities(field_oriented_velocity, desired_angular_velocity);
 
       if(!maximize_velocity){
-          drive.run_wheels(wheel_velocities, 1.0);
-          return;
+        drive.run_wheels(wheel_velocities, 1.0);
+        return;
       }
 
       double highest = 0.0;
@@ -106,19 +90,20 @@ public class Swerve extends Command {
         }
       }
 
-      double multiplier = 1.0 / highest;
+      double multiplier = MathUtil.clamp(1.0 / highest,0.0,1.0);
 
       if(highest < 0.01){
           multiplier = 1.0;
       }
       
       drive.run_wheels(wheel_velocities, multiplier);
-
     }
 
     // Called once the command ends or is interrupted.
     @Override
-    public void end(boolean interrupted) {}
+    public void end(boolean interrupted) {
+      drive.stop_wheels();
+    }
 
     // Returns true when the command should end.
     @Override

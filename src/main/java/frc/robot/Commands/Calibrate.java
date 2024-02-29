@@ -3,19 +3,25 @@ package frc.robot.Commands;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.Subsystems.Intake;
 import frc.robot.Subsystems.Limelight;
+import frc.robot.Subsystems.Shooter;
 import frc.robot.Subsystems.Swerve.Drive;
 
-public class FieldOrient extends Command{
+public class Calibrate extends Command{
 
     private final Drive drive;
+    private final Shooter shooter;
+    private final Intake intake;
 
     private double start_time = Timer.getFPGATimestamp();
 
-    public FieldOrient(Drive drive) {
+    public Calibrate(Drive drive, Intake intake, Shooter shooter) {
         this.drive = drive;
+        this.intake = intake;
+        this.shooter = shooter;
     
-        addRequirements(drive);
+        addRequirements(drive, intake, shooter);
         // Use addRequirements() here to declare subsystem dependencies.
     }
   
@@ -28,7 +34,7 @@ public class FieldOrient extends Command{
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        if(drive.attempt_field_orient()){
+        if(drive.attempt_set_team() && drive.attempt_field_orient()){
             end(false);
         }
     }

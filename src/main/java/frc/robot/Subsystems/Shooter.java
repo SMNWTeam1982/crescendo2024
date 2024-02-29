@@ -10,12 +10,14 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Utilities.PID;
+import frc.robot.Utilities.Rotation2dFix;
 
 public class Shooter extends SubsystemBase {
   private final CANSparkMax pivot_motor;
@@ -28,6 +30,11 @@ public class Shooter extends SubsystemBase {
     Constants.ShooterConstants.pivot_i,
     Constants.ShooterConstants.pivot_d
   );
+  private final PID motor_velocity_pid = new PID(
+    Constants.ShooterConstants.shoot_speed_p,
+    Constants.ShooterConstants.shoot_speed_i,
+    Constants.ShooterConstants.shoot_speed_d
+  );
 
   /** Creates a new Shooter. */
   public Shooter(int pivot_motor_channel, int upper_shoot_motor_channel, int lower_shoot_motor_channel) {
@@ -36,7 +43,6 @@ public class Shooter extends SubsystemBase {
     lower_shoot_motor = new CANSparkMax(lower_shoot_motor_channel, MotorType.kBrushless);
 
     pivot_motor = new CANSparkMax(pivot_motor_channel, MotorType.kBrushless);
-
 
     upper_shoot_motor.restoreFactoryDefaults();
     upper_shoot_motor.setOpenLoopRampRate(1.0);
@@ -52,7 +58,7 @@ public class Shooter extends SubsystemBase {
     return run(
       () -> {
         if(shoot_function.get()){
-          set_shoot_motors(1.0);
+          set_shoot_motors(0.8);
         }else{
           set_shoot_motors(0.0);
         }
@@ -75,34 +81,41 @@ public class Shooter extends SubsystemBase {
   }
 
   public Rotation2d get_shooter_angle(){
-    return Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.ShooterConstants.pivot_motor_rotations_to_shooter_rotations)
-    .plus(Constants.ShooterConstants.shooter_start_angle);
+    return Rotation2dFix.fix(
+      Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.ShooterConstants.pivot_motor_rotations_to_shooter_rotations)
+      .plus(Constants.ShooterConstants.shooter_start_angle)
+    );
   }
 
   public void set_shoot_motors(double speed){
-    if(speed > 1.0){
-      upper_shoot_motor.set(1.0 * Constants.ShooterConstants.upper_shoot_motor_multiplier);
-      lower_shoot_motor.set(1.0 * Constants.ShooterConstants.lower_shoot_motor_multiplier);
-      return;
-    }
-    if(speed < -1.0){
-      upper_shoot_motor.set(1.0 * Constants.ShooterConstants.upper_shoot_motor_multiplier);
-      lower_shoot_motor.set(1.0 * Constants.ShooterConstants.lower_shoot_motor_multiplier);
-      return;
-    }
-    upper_shoot_motor.set(speed * Constants.ShooterConstants.upper_shoot_motor_multiplier);
-    lower_shoot_motor.set(speed * Constants.ShooterConstants.lower_shoot_motor_multiplier);
+
+    
+    
+
+    double desired_upper_shooter_speed = speed + motor_velocity_pid.out(upper_shoot_motor.getEncoder().getVelocity() / Constants.ShooterConstants.shoot_motor_max_rpm, speed ,0.0);
+
+    double upper_speed = MathUtil.clamp(
+      desired_upper_shooter_speed,
+      -1.0,
+      1.0
+    );
+
+    double desired_lower_shooter_speed = -speed + motor_velocity_pid.out(lower_shoot_motor.getEncoder().getVelocity() / Constants.ShooterConstants.shoot_motor_max_rpm, -speed ,0.0);
+
+    double lower_speed = MathUtil.clamp(
+      desired_lower_shooter_speed,
+      -1.0,
+      1.0
+    );
+
+    SmartDashboard.putNumber("upper_shooter_error",  speed - upper_shoot_motor.getEncoder().getVelocity()/Constants.ShooterConstants.shoot_motor_max_rpm);
+    SmartDashboard.putNumber("lower_shooter_error",  -speed - lower_shoot_motor.getEncoder().getVelocity()/Constants.ShooterConstants.shoot_motor_max_rpm);
+
+    upper_shoot_motor.set(upper_speed * Constants.ShooterConstants.upper_shoot_motor_multiplier);
+    lower_shoot_motor.set(lower_speed * Constants.ShooterConstants.lower_shoot_motor_multiplier);
   }
 
   public void set_pivot_motor(double speed){
-    if(speed > 1.0){
-      pivot_motor.set(1.0 * Constants.ShooterConstants.pivot_motor_multiplier);
-      return;
-    }
-    if(speed < -1.0){
-      pivot_motor.set(-1.0 * Constants.ShooterConstants.pivot_motor_multiplier);
-      return;
-    }
-    pivot_motor.set(speed * Constants.ShooterConstants.pivot_motor_multiplier);
+    pivot_motor.set(MathUtil.clamp(speed, -1.0, 1.0) * Constants.ShooterConstants.pivot_motor_multiplier);
   }
 }

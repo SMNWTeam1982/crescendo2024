@@ -7,9 +7,9 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 public class Constants {
     public static final class DriveConstants {
         
-        public static final double wheel_speed_multiplier = 0.4;//0.2
+        public static final double wheel_speed_multiplier = 1.0;//0.2
         public static final double wheel_rotation_multiplier = 0.25;//0.25
-        public static final double angular_velocity_multiplier = 0.4;
+        public static final double angular_velocity_multiplier = 0.68;
 
         public static final double wheel_rotation_p = 0.038;
         public static final double wheel_rotation_i = 0.0;
@@ -63,18 +63,24 @@ public class Constants {
         public static final double pivot_p = 0.015;
         public static final double pivot_i = 0.0;
         public static final double pivot_d = 0.0;
+
+        public static final double shoot_speed_p = 0.1;
+        public static final double shoot_speed_i = 0.0;
+        public static final double shoot_speed_d = 0.0;
         public static final Rotation2d shooter_start_angle = Rotation2d.fromDegrees(68.0);
         
-        public static final Rotation2d shooter_load_angle = Rotation2d.fromDegrees(45.0);
+        public static final Rotation2d shooter_load_angle = Rotation2d.fromDegrees(40.0);
         // gear ratio is 100:1
         public static final double pivot_motor_rotations_to_shooter_rotations = 0.01;
 
         public static final double pivot_motor_multiplier = 1.0;
 
         public static final double upper_shoot_motor_multiplier = 1.0;
-        public static final double lower_shoot_motor_multiplier = -1.0;
+        public static final double lower_shoot_motor_multiplier = 1.0;
 
         public static final double shooter_pivot_point_height = 0.46; // meters
+
+        public static final double shoot_motor_max_rpm = 5676.0;
     }
 
     public static final class IntakeConstants{
@@ -89,6 +95,7 @@ public class Constants {
         public static final double intake_multiplier = 0.5;
 
         public static final Rotation2d deployed_angle = Rotation2d.fromDegrees(210.0);
+        public static final Rotation2d amp_scoring_angle = Rotation2d.fromDegrees(90.0);
         public static final Rotation2d handoff_angle = Rotation2d.fromDegrees(25.0);
     }
     // public static final double speaker_id_height = 51.875;

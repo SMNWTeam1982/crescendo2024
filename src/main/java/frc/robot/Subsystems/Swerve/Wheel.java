@@ -5,12 +5,14 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import frc.robot.Constants;
 import frc.robot.Utilities.PID;
 import frc.robot.Utilities.PolarVector;
+import frc.robot.Utilities.Rotation2dFix;
 import frc.robot.Utilities.Vector;
 
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -45,8 +47,8 @@ public class Wheel {
         zero_wheel_position();
 
         go_motor.restoreFactoryDefaults();
-        go_motor.setClosedLoopRampRate(1.0);
-        go_motor.setOpenLoopRampRate(0.5);
+        // go_motor.setClosedLoopRampRate(0.1);
+        // go_motor.setOpenLoopRampRate(0.1);
         turn_motor.restoreFactoryDefaults();
 
         CANcoderConfiguration config = new CANcoderConfiguration();
@@ -145,8 +147,8 @@ public class Wheel {
         
     
         Rotation2d current_angle = get_encoder();
-        Rotation2d perpendicular_angle = current_angle.plus(Rotation2d.fromDegrees(90.0));
-        Rotation2d opposite_angle = current_angle.plus(Rotation2d.fromDegrees(180.0));
+        Rotation2d perpendicular_angle = Rotation2dFix.fix(current_angle.plus(Rotation2d.fromDegrees(90.0)));
+        Rotation2d opposite_angle = Rotation2dFix.fix(current_angle.plus(Rotation2d.fromDegrees(180.0)));
     
         // establishes the three angles used to determine the optimal way to move the wheel
         Rotation2d delta = angle_between( current_angle , desired_state.angle );
@@ -179,38 +181,21 @@ public class Wheel {
     
     // uses dot product formula to find the angle between the two angles
     public Rotation2d angle_between( Rotation2d angle_1 , Rotation2d angle_2 ){
-        return Rotation2d.fromRadians(
-            Math.acos(
-                angle_1.getCos() * angle_2.getCos() + 
-                angle_1.getSin() * angle_2.getSin()
+        return Rotation2dFix.fix(
+            Rotation2d.fromRadians(
+                Math.acos(
+                    angle_1.getCos() * angle_2.getCos() + 
+                    angle_1.getSin() * angle_2.getSin()
+                )
             )
         );
     }
 
-    public void move_turn_motor( double power ){
-        if (power > 1.0){
-            turn_motor.set( 1.0 * Constants.DriveConstants.wheel_rotation_multiplier );
-            return;
-        }
-
-        if (power < -1.0){
-            turn_motor.set( -1.0 * Constants.DriveConstants.wheel_rotation_multiplier );
-            return;
-        }
-
-        turn_motor.set( power * Constants.DriveConstants.wheel_rotation_multiplier );
+    public void move_turn_motor( double speed ){
+        turn_motor.set( MathUtil.clamp(speed, -1.0, 1.0) * Constants.DriveConstants.wheel_rotation_multiplier );
     }
 
-    public void move_go_motor( double power ){
-        if (power > 1.0){
-            go_motor.set( 1.0 * Constants.DriveConstants.wheel_speed_multiplier );
-            return;
-        }
-
-        if (power < -1.0){
-            go_motor.set( -1.0 * Constants.DriveConstants.wheel_speed_multiplier );
-            return;
-        }
-        go_motor.set( power * Constants.DriveConstants.wheel_speed_multiplier); 
+    public void move_go_motor( double speed ){
+        go_motor.set( MathUtil.clamp(speed, -1.0, 1.0) * Constants.DriveConstants.wheel_speed_multiplier); 
     }
 }

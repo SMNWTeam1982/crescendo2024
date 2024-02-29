@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -19,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants;
 import frc.robot.Utilities.PID;
+import frc.robot.Utilities.Rotation2dFix;
 import edu.wpi.first.math.MathUtil;
 
 public class Intake extends SubsystemBase {
@@ -31,7 +33,6 @@ public class Intake extends SubsystemBase {
     Constants.IntakeConstants.pivot_d
   );
   private Rotation2d target_angle = Constants.IntakeConstants.intake_starting_position;
-  private boolean intake_deployed = false;
   /** Creates a new Intake. */
   public Intake(int pivot_motor_channel, int intake_motor_channel) {
     pivot_motor = new CANSparkMax(pivot_motor_channel, MotorType.kBrushless);
@@ -46,71 +47,46 @@ public class Intake extends SubsystemBase {
     SmartDashboard.putNumber("intake error",target_angle.getDegrees() - get_intake_angle().getDegrees());
   }
 
-  public Command get_intake_command(Supplier<Double> intake_function, Supplier<Boolean> toggle_deploy_function, Supplier<Boolean> zero_position_function){
+  public Command get_intake_command(Supplier<Double> intake_function, Supplier<Rotation2d> desired_angle_function, Supplier<Boolean> zero_position_function){
     return run(
       () -> {
         set_intake(intake_function.get());
 
-        if(toggle_deploy_function.get()){
-          intake_deployed = !intake_deployed;
-        }
-        
-        if(intake_deployed){
-          //target_angle = Constants.IntakeConstants.deployed_angle.plus(Rotation2d.fromDegrees(shooter_controller.getRightY() * 5.0));
-          target_angle = Constants.IntakeConstants.deployed_angle;
-        } else{
-          target_angle = Constants.IntakeConstants.handoff_angle;
+        Rotation2d angle = desired_angle_function.get();
+
+        if(angle != null){
+          target_angle = angle;
         }
 
         set_pivot_motor(get_pid());
 
         if(zero_position_function.get()){
-
+          intake_motor.setIdleMode(IdleMode.kCoast);
           double time = Timer.getFPGATimestamp();
           while(Timer.getFPGATimestamp() < time+1.0);
           pivot_encoder.setPosition(Constants.IntakeConstants.intake_starting_position.getRotations());
+          intake_motor.setIdleMode(IdleMode.kBrake);
         }
       }
     );
   }
 
   public void set_intake(double speed){
-    if(speed > 1.0){
-      intake_motor.set(1.0 * Constants.IntakeConstants.intake_multiplier);
-      return;
-    }
-    if(speed < -1.0){
-      intake_motor.set(-1.0 * Constants.IntakeConstants.intake_multiplier);
-    }
-    intake_motor.set(speed * Constants.IntakeConstants.intake_multiplier);
+    intake_motor.set(MathUtil.clamp(speed, -1.0, 1.0) * Constants.IntakeConstants.intake_multiplier);
   }
 
   public double get_pid(){
-    double normal_target_angle = MathUtil.inputModulus(target_angle.getDegrees(), 0.0, 360.0);
-    return pivot_pid.out(get_intake_angle().getDegrees(), normal_target_angle, 0.0);
+    return pivot_pid.out(get_intake_angle().getDegrees(), target_angle.getDegrees(), 0.0);
   }
 
   public Rotation2d get_intake_angle(){
-
-    return Rotation2d.fromDegrees(
-      MathUtil.inputModulus(
-        Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations)
-        .plus(Constants.IntakeConstants.intake_starting_position).getDegrees(),
-        0.0,
-        360.0
-      )
+    return Rotation2dFix.fix(
+      Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations)
+      .plus(Constants.IntakeConstants.intake_starting_position)
     );
   }
 
   public void set_pivot_motor(double speed){
-    if(speed > 1.0){
-      pivot_motor.set(1.0 * Constants.IntakeConstants.pivot_motor_multiplier);
-      return;
-    }
-    if(speed < -1.0){
-      pivot_motor.set(-1.0 * Constants.IntakeConstants.pivot_motor_multiplier);
-      return;
-    }
-    pivot_motor.set(speed * Constants.IntakeConstants.pivot_motor_multiplier);
+    pivot_motor.set(MathUtil.clamp(speed, -1.0, 1.0) * Constants.IntakeConstants.pivot_motor_multiplier);
   }
 }

@@ -7,7 +7,7 @@ public class PolarVector {
     public double length;
 
     public PolarVector(Rotation2d angle, double length){
-        this.angle = angle;
+        this.angle = Rotation2dFix.fix(angle);
         this.length = length;
     }
 

@@ -6,15 +6,20 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Subsystems.Limelight;
 import frc.robot.Utilities.PolarVector;
 import frc.robot.Utilities.Tracking;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 
 public class Drive extends SubsystemBase {
     private Gyroscope gyro = new Gyroscope();
+
+    private boolean is_on_red_side = true;
 
     private final Wheel front_right_wheel = new Wheel(
         5,
@@ -50,12 +55,26 @@ public class Drive extends SubsystemBase {
 
     private final SwerveDrivePoseEstimator pose_estimator = new SwerveDrivePoseEstimator(
         Constants.DriveConstants.kinematics,
-        get_gyro_angle(),
+        get_field_angle(),
         get_module_positions(),
         Limelight.get_field_position()
     );
 
     public Drive() {}
+
+    public boolean attempt_set_team(){
+        if(DriverStation.getAlliance().isEmpty()){
+            return false;
+        }
+    
+        if(DriverStation.getAlliance().get() == Alliance.Red){
+            is_on_red_side = true;
+        }else{
+            is_on_red_side = false;
+        };
+
+        return true;
+    }
 
     public void set_turn_braking(boolean braking){
         front_right_wheel.set_turn_braking(braking);
@@ -75,8 +94,16 @@ public class Drive extends SubsystemBase {
         gyro.zero_angle();
     }
 
-    public Rotation2d get_gyro_angle(){
+    public Rotation2d get_field_angle(){
         return gyro.get_angle();
+    }
+
+    public Rotation2d get_driver_angle(){
+        if(is_on_red_side){
+            return gyro.get_red_angle();
+        }else{
+            return gyro.get_blue_angle();
+        }
     }
 
     public boolean attempt_field_orient(){
@@ -87,7 +114,6 @@ public class Drive extends SubsystemBase {
         }
         return visible_target;
     }
-    
 
     /**
      * @param desired_robot_linear_velocity
@@ -110,6 +136,13 @@ public class Drive extends SubsystemBase {
         back_right_wheel .run(desired_wheel_velocities[3], velocity_multiplier);
     }
 
+    public void stop_wheels(){
+        front_right_wheel.move_go_motor(0.0);
+        front_left_wheel.move_go_motor(0.0);
+        back_left_wheel.move_go_motor(0.0);
+        back_right_wheel.move_go_motor(0.0);
+    }
+
     public SwerveModuleState[] get_module_states(){
         return new SwerveModuleState[] {
             front_right_wheel.get_state(),
@@ -128,6 +161,15 @@ public class Drive extends SubsystemBase {
         };
     }
 
+    public ChassisSpeeds pgetChassisSpeed() {
+       return Constants.DriveConstants.kinematics.toChassisSpeeds(
+            front_right_wheel.get_state(),
+            front_left_wheel .get_state(),
+            back_left_wheel  .get_state(),
+            back_right_wheel .get_state()
+        );
+    }
+
     public Pose2d get_robot_pose(){
         return pose_estimator.getEstimatedPosition();
     }
@@ -141,7 +183,7 @@ public class Drive extends SubsystemBase {
             pose_estimator.addVisionMeasurement(limelight_results.pose, limelight_results.timestamp, limelight_results.standard_deviation);
         }
 
-        pose_estimator.update(get_gyro_angle(), get_module_positions());
+        pose_estimator.update(get_field_angle(), get_module_positions());
 
         SmartDashboard.putString("robot pose",pose_estimator.getEstimatedPosition().toString());
     }
