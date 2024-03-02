@@ -8,13 +8,22 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Subsystems.Limelight;
+import frc.robot.Utilities.PID;
 import frc.robot.Utilities.PolarVector;
+import frc.robot.Utilities.Rotation2dFix;
 import frc.robot.Utilities.Tracking;
+import frc.robot.Utilities.Vector;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.util.ReplanningConfig;
+import com.pathplanner.lib.util.PIDConstants;
+
 
 public class Drive extends SubsystemBase {
     private Gyroscope gyro = new Gyroscope();
@@ -60,7 +69,21 @@ public class Drive extends SubsystemBase {
         Limelight.get_field_position()
     );
 
-    public Drive() {}
+    private final PID robot_rotation_pid = new PID(
+        Constants.DriveConstants.robot_rotation_p,
+        Constants.DriveConstants.robot_rotation_i,
+        Constants.DriveConstants.robot_rotation_d
+    );
+
+    //private final Field2d field = new Field2d();
+
+    public Drive() {
+        //SmartDashboard.putData("field", field);
+    }
+
+    public Pose2d getEstimatedPose(){
+        return pose_estimator.getEstimatedPosition();
+    }
 
     public boolean attempt_set_team(){
         if(DriverStation.getAlliance().isEmpty()){
@@ -74,6 +97,28 @@ public class Drive extends SubsystemBase {
         };
 
         return true;
+    }
+
+    public boolean is_on_red_side(){
+        return is_on_red_side;
+    }
+
+    public double get_rotation_pid(Rotation2d desired_angle){
+        //stolen from wheel logic
+        Rotation2d current_angle = get_field_angle();
+        Rotation2d perpendicular_angle = Rotation2dFix.fix(current_angle.plus(Rotation2d.fromDegrees(90.0)));
+    
+        // establishes the three angles used to determine the optimal way to move the wheel
+        Rotation2d delta = Wheel.angle_between( current_angle , desired_angle );
+        Rotation2d zeta = Wheel.angle_between( perpendicular_angle , desired_angle );
+
+        double power = robot_rotation_pid.out(delta.getDegrees(),0.0,0.0);
+        
+        if (zeta.getDegrees() > 90.0){ // Checks if left or right movement is needed
+            return power;
+        }else{
+            return -power;
+        }
     }
 
     public void set_turn_braking(boolean braking){
@@ -128,6 +173,67 @@ public class Drive extends SubsystemBase {
             back_right_wheel .calculate(desired_robot_linear_velocity, desired_angular_velocity)
         };
     }
+    
+    public void drive_from_chassis_speeds(ChassisSpeeds speeds){
+        double x = MathUtil.clamp(speeds.vxMetersPerSecond / Constants.DriveConstants.max_speed_meters_per_second, -1.0,1.0);
+        double y = MathUtil.clamp(speeds.vyMetersPerSecond / Constants.DriveConstants.max_speed_meters_per_second, -1.0,1.0);
+
+        double speed = Math.sqrt(x * x + y * y);
+        if(speed > 1.0){speed = 1.0;}
+        if(speed < 0.1){speed = 0.0;}
+
+        PolarVector desired_velocity = new PolarVector(
+            Rotation2d.fromRadians(Math.atan2(y,x)).plus(Rotation2d.fromDegrees(90.0)),
+            speed
+        );
+
+        PolarVector[] wheel_velocities = calculate_wheel_velocities(desired_velocity, speeds.omegaRadiansPerSecond/Constants.DriveConstants.max_radians_per_second);
+  
+        double highest = 0.0;
+        for(PolarVector wheel_velocity : wheel_velocities){
+          if( wheel_velocity.length > highest ){
+            highest = wheel_velocity.length;
+          }
+        }
+  
+        double multiplier = MathUtil.clamp(1.0 / highest,0.0,1.0);
+  
+        if(highest < 0.01){
+            multiplier = 1.0;
+        }
+        
+        run_wheels(wheel_velocities, multiplier);
+    }
+
+    private void resetPose(Pose2d pos){}
+
+    public void BuilderConfigure(){
+        AutoBuilder.configureHolonomic(
+            this::getEstimatedPose, // Robot pose supplier
+            this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
+            this::getChassisSpeed, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            this::drive_from_chassis_speeds,  // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+            new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
+                new PIDConstants(0.2, 0, 0), // Translation PID constants
+                new PIDConstants(0.2, 0, 0), // Rotation PID constants
+                Constants.DriveConstants.max_speed_meters_per_second, // Max module speed, in m/s
+                18.38, // Drive base radius in meters. Distance from robot center to furthest module.
+                new ReplanningConfig()
+            ), 
+            () -> {
+                // Boolean supplier that controls when the path will be mirrored for the red alliance
+                // This will flip the path being followed to the red side of the field.
+                // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+                var alliance = DriverStation.getAlliance();
+                if (alliance.isPresent()) {
+                    return alliance.get() == DriverStation.Alliance.Red;
+                }
+                return false;
+            },
+            this // Reference to this subsystem to set requirements
+        );
+    }
 
     public void run_wheels(PolarVector[] desired_wheel_velocities, double velocity_multiplier){
         front_right_wheel.run(desired_wheel_velocities[0], velocity_multiplier);
@@ -161,7 +267,7 @@ public class Drive extends SubsystemBase {
         };
     }
 
-    public ChassisSpeeds pgetChassisSpeed() {
+    public ChassisSpeeds getChassisSpeed() {
        return Constants.DriveConstants.kinematics.toChassisSpeeds(
             front_right_wheel.get_state(),
             front_left_wheel .get_state(),
@@ -185,7 +291,10 @@ public class Drive extends SubsystemBase {
 
         pose_estimator.update(get_field_angle(), get_module_positions());
 
-        SmartDashboard.putString("robot pose",pose_estimator.getEstimatedPosition().toString());
+        //field.setRobotPose(get_robot_pose());
+        SmartDashboard.putString("pose",get_robot_pose().toString());
+
+        SmartDashboard.putBoolean("is on red team",is_on_red_side());
     }
 
     @Override

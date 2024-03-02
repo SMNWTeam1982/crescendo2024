@@ -8,10 +8,12 @@ import java.util.function.Supplier;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -52,6 +54,9 @@ public class Shooter extends SubsystemBase {
     lower_shoot_motor.setClosedLoopRampRate(1.0);
     pivot_encoder = pivot_motor.getEncoder();
     pivot_encoder.setPosition(Constants.ShooterConstants.shooter_start_angle.getRotations());
+
+    pivot_motor.setIdleMode(IdleMode.kCoast);
+    pivot_motor.setIdleMode(IdleMode.kCoast);
   }
 
   public Command shooter_command(Supplier<Boolean> shoot_function, Supplier<Rotation2d> target_angle_function){
@@ -70,10 +75,21 @@ public class Shooter extends SubsystemBase {
     );
   }
 
+  public Command get_calibrate_command(){
+    return runOnce(
+      () -> {
+        double time = Timer.getFPGATimestamp();
+        while(Timer.getFPGATimestamp() < time+1.0){};
+        pivot_encoder.setPosition(Constants.ShooterConstants.shooter_start_angle.getRotations());
+      }
+    );
+  }
+
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    //SmartDashboard.putNumber("shooter error",target_angle.getDegrees() - get_shooter_angle().getDegrees());
+    SmartDashboard.putNumber("shooter angle",get_shooter_angle().getDegrees());
+    SmartDashboard.putNumber("target shooter angle", target_angle.getDegrees());
   }
 
   public double get_pid(){
@@ -88,9 +104,6 @@ public class Shooter extends SubsystemBase {
   }
 
   public void set_shoot_motors(double speed){
-
-    
-    
 
     double desired_upper_shooter_speed = speed + motor_velocity_pid.out(upper_shoot_motor.getEncoder().getVelocity() / Constants.ShooterConstants.shoot_motor_max_rpm, speed ,0.0);
 

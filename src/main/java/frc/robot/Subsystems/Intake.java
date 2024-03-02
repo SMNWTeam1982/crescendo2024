@@ -12,16 +12,16 @@ import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants;
 import frc.robot.Utilities.PID;
 import frc.robot.Utilities.Rotation2dFix;
 import edu.wpi.first.math.MathUtil;
+
 
 public class Intake extends SubsystemBase {
   private final CANSparkMax pivot_motor;
@@ -32,25 +32,51 @@ public class Intake extends SubsystemBase {
     Constants.IntakeConstants.pivot_i,
     Constants.IntakeConstants.pivot_d
   );
-  private Rotation2d target_angle = Constants.IntakeConstants.intake_starting_position;
+  private Rotation2d target_angle = Constants.IntakeConstants.handoff_angle;
+
+  private final DigitalInput note_detector;
   /** Creates a new Intake. */
-  public Intake(int pivot_motor_channel, int intake_motor_channel) {
+  public Intake(int pivot_motor_channel, int intake_motor_channel, int note_detector_channel) {
     pivot_motor = new CANSparkMax(pivot_motor_channel, MotorType.kBrushless);
     pivot_encoder = pivot_motor.getEncoder();
-    intake_motor = new CANSparkMax(intake_motor_channel, MotorType.kBrushless);
+    
     pivot_encoder.setPosition(Constants.IntakeConstants.intake_starting_position.getRotations());
+    intake_motor = new CANSparkMax(intake_motor_channel, MotorType.kBrushless);
+    note_detector = new DigitalInput(note_detector_channel);
+    pivot_motor.setIdleMode(IdleMode.kCoast);
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
     SmartDashboard.putNumber("intake error",target_angle.getDegrees() - get_intake_angle().getDegrees());
+    SmartDashboard.putNumber("intake_angle", get_intake_angle().getDegrees());
   }
 
-  public Command get_intake_command(Supplier<Double> intake_function, Supplier<Rotation2d> desired_angle_function, Supplier<Boolean> zero_position_function){
+  public Command get_calibrate_command(){
+    return runOnce(
+      () -> {
+        pivot_motor.setIdleMode(IdleMode.kCoast);
+        double time = Timer.getFPGATimestamp();
+        while(Timer.getFPGATimestamp() < time+1.0){};
+        pivot_encoder.setPosition(MathUtil.inputModulus(Constants.IntakeConstants.intake_starting_position.getRotations(),0.0,1.0));
+      }
+    );
+  }
+
+  public boolean holding_note(){
+    return false;
+  }
+
+  public Command get_intake_command(Supplier<Double> intake_function, Supplier<Rotation2d> desired_angle_function){
+    pivot_encoder.setPosition(Constants.IntakeConstants.intake_starting_position.getRotations());
     return run(
       () -> {
-        set_intake(intake_function.get());
+        double intake_speed = intake_function.get();
+        if(holding_note() && intake_speed < 0.0){
+          intake_speed = 0.0;
+        }
+        set_intake(intake_speed);
 
         Rotation2d angle = desired_angle_function.get();
 
@@ -59,14 +85,6 @@ public class Intake extends SubsystemBase {
         }
 
         set_pivot_motor(get_pid());
-
-        if(zero_position_function.get()){
-          intake_motor.setIdleMode(IdleMode.kCoast);
-          double time = Timer.getFPGATimestamp();
-          while(Timer.getFPGATimestamp() < time+1.0);
-          pivot_encoder.setPosition(Constants.IntakeConstants.intake_starting_position.getRotations());
-          intake_motor.setIdleMode(IdleMode.kBrake);
-        }
       }
     );
   }
@@ -82,7 +100,6 @@ public class Intake extends SubsystemBase {
   public Rotation2d get_intake_angle(){
     return Rotation2dFix.fix(
       Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations)
-      .plus(Constants.IntakeConstants.intake_starting_position)
     );
   }
 

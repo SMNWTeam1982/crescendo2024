@@ -73,14 +73,14 @@ public class Wheel {
         return go_motor_encoder.getVelocity() * Constants.DriveConstants.go_motor_rpm_to_meters_per_second;
     }
     public double get_wheel_position(){
-        return go_motor_encoder.getPosition() * Constants.DriveConstants.wheel_rotations_to_meters_traveled;
+        return go_motor_encoder.getPosition() * Constants.DriveConstants.motor_rotations_to_meters_traveled;
     }
     public void zero_wheel_position(){
         go_motor_encoder.setPosition(0.0);
     }
 
     public Rotation2d get_encoder(){
-        return Rotation2d.fromDegrees(encoder.getAbsolutePosition().getValueAsDouble() * 360.0).minus(encoder_offset);
+        return Rotation2dFix.fix(Rotation2d.fromDegrees(encoder.getAbsolutePosition().getValueAsDouble() * 360.0).minus(encoder_offset));
     }
 
     public double get_PID(Rotation2d angle){
@@ -180,7 +180,7 @@ public class Wheel {
     }
     
     // uses dot product formula to find the angle between the two angles
-    public Rotation2d angle_between( Rotation2d angle_1 , Rotation2d angle_2 ){
+    public static Rotation2d angle_between( Rotation2d angle_1 , Rotation2d angle_2 ){
         return Rotation2dFix.fix(
             Rotation2d.fromRadians(
                 Math.acos(
