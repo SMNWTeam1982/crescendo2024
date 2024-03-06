@@ -7,7 +7,6 @@ import frc.robot.Constants;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 public class Auto extends SubsystemBase{
-    //dumby classs for commandschedueler
 
   private boolean intakeTargetingShooter = false;
   private double intakeSpeed = 0.0; 

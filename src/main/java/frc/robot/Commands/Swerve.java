@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Subsystems.Swerve.Drive;
+import frc.robot.Utilities.PID;
 import frc.robot.Utilities.PolarVector;
 
 public class Swerve extends Command {
@@ -21,6 +22,16 @@ public class Swerve extends Command {
   private final Supplier<Boolean> maximize_velocity_function; 
   //private final Supplier<Boolean> zero_gyro_function;
   private final Supplier<Boolean> field_orient_function;
+  private Rotation2d robot_rotation = new Rotation2d(0);
+
+  private Rotation2d target_rotation = Rotation2d.fromDegrees(0.0);
+  private Rotation2d antidrift_angle = Rotation2d.fromDegrees(0.0);
+
+  private final PID robot_rotation_pid = new PID(
+    0.2,
+    0.0,
+    0.0
+  );
 
   /** Creates a new Swerve. */
     public Swerve(
@@ -59,6 +70,14 @@ public class Swerve extends Command {
 
       double desired_angular_velocity = angular_velocity_function.get();
 
+      // target_rotation = target_rotation.plus(Rotation2d.fromDegrees(desired_angular_velocity));
+
+      // desired_angular_velocity = MathUtil.clamp(
+      //   robot_rotation_pid.out(Pid,0.0,0.0),
+      //   -1.0,
+      //   1.0
+      // );
+
       boolean maximize_velocity = maximize_velocity_function.get();
 
       PolarVector desired_velocity = desired_velocity_function.get();
@@ -67,13 +86,18 @@ public class Swerve extends Command {
         maximize_velocity = false;
       }
 
-      Rotation2d robot_rotation = drive.get_driver_angle();
+      robot_rotation = drive.get_driver_angle();
 
-      SmartDashboard.putNumber("robot driver heading", drive.get_driver_angle().getDegrees());
+      // if(Math.abs(desired_angular_velocity) > 0 || (antidrift_angle.getDegrees() == 0)){
+      //   //drive.get_rotation_pid(robot_rotation);
+      //   antidrift_angle = robot_rotation;
+      // } else {
+      //   desired_angular_velocity = drive.get_rotation_pid_antidrift(antidrift_angle); 
+      // }
 
       PolarVector field_oriented_velocity = new PolarVector(desired_velocity.angle.minus(robot_rotation), desired_velocity.length);
 
-      PolarVector[] wheel_velocities = drive.calculate_wheel_velocities(field_oriented_velocity, desired_angular_velocity);
+      PolarVector[] wheel_velocities = drive.calculate_wheel_velocities(field_oriented_velocity, MathUtil.clamp(desired_angular_velocity,-1.0,1.0));
 
       if(!maximize_velocity){
         drive.run_wheels(wheel_velocities, 1.0);

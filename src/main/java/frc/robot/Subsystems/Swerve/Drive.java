@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Subsystems.Limelight;
@@ -69,16 +70,51 @@ public class Drive extends SubsystemBase {
         Limelight.get_field_position()
     );
 
+    private PolarVector[] last_velocities;
+
     private final PID robot_rotation_pid = new PID(
         Constants.DriveConstants.robot_rotation_p,
         Constants.DriveConstants.robot_rotation_i,
         Constants.DriveConstants.robot_rotation_d
     );
 
+    private final PID robot_antidrift_pid = new PID(
+        Constants.DriveConstants.antidrift_p,
+        Constants.DriveConstants.antidrift_i,
+        Constants.DriveConstants.antidrift_d
+    );
+
+    private Rotation2d target_angle = Rotation2d.fromDegrees(0.0);
+
     //private final Field2d field = new Field2d();
 
     public Drive() {
         //SmartDashboard.putData("field", field);
+        AutoBuilder.configureHolonomic(
+            this::getEstimatedPose, // Robot pose supplier
+            this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
+            this::getChassisSpeed, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            this::drive_from_chassis_speeds,  // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+            new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
+                new PIDConstants(1.0, 0, 0), // Translation PID constants
+                new PIDConstants(1.0, 0, 0), // Rotation PID constants
+                Constants.DriveConstants.max_speed_meters_per_second, // Max module speed, in m/s
+                0.47, // Drive base radius in meters. Distance from robot center to furthest module.
+                new ReplanningConfig()
+            ), 
+            () -> {
+                // Boolean supplier that controls when the path will be mirrored for the red alliance
+                // This will flip the path being followed to the red side of the field.
+                // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+                var alliance = DriverStation.getAlliance();
+                if (alliance.isPresent()) {
+                    return alliance.get() == DriverStation.Alliance.Red;
+                }
+                return false;
+            },
+            this // Reference to this subsystem to set requirements
+        );
     }
 
     public Pose2d getEstimatedPose(){
@@ -112,7 +148,25 @@ public class Drive extends SubsystemBase {
         Rotation2d delta = Wheel.angle_between( current_angle , desired_angle );
         Rotation2d zeta = Wheel.angle_between( perpendicular_angle , desired_angle );
 
-        double power = robot_rotation_pid.out(delta.getDegrees(),0.0,0.0);
+        double power = MathUtil.clamp(robot_rotation_pid.out(delta.getDegrees(),0.0,0.0),-1.0,1.0);
+        
+        if (zeta.getDegrees() > 90.0){ // Checks if left or right movement is needed
+            return power;
+        }else{
+            return -power;
+        }
+    }
+
+    public double get_rotation_pid_antidrift(Rotation2d desired_angle){
+        //stolen from wheel logic
+        Rotation2d current_angle = get_field_angle();
+        Rotation2d perpendicular_angle = Rotation2dFix.fix(current_angle.plus(Rotation2d.fromDegrees(90.0)));
+    
+        // establishes the three angles used to determine the optimal way to move the wheel
+        Rotation2d delta = Wheel.angle_between( current_angle , desired_angle );
+        Rotation2d zeta = Wheel.angle_between( perpendicular_angle , desired_angle );
+
+        double power = MathUtil.clamp(robot_antidrift_pid.out(delta.getDegrees(),0.0,0.0),-1.0,1.0);
         
         if (zeta.getDegrees() > 90.0){ // Checks if left or right movement is needed
             return power;
@@ -208,30 +262,46 @@ public class Drive extends SubsystemBase {
     private void resetPose(Pose2d pos){}
 
     public void BuilderConfigure(){
-        AutoBuilder.configureHolonomic(
-            this::getEstimatedPose, // Robot pose supplier
-            this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
-            this::getChassisSpeed, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            this::drive_from_chassis_speeds,  // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
-            new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
-                new PIDConstants(0.2, 0, 0), // Translation PID constants
-                new PIDConstants(0.2, 0, 0), // Rotation PID constants
-                Constants.DriveConstants.max_speed_meters_per_second, // Max module speed, in m/s
-                18.38, // Drive base radius in meters. Distance from robot center to furthest module.
-                new ReplanningConfig()
-            ), 
-            () -> {
-                // Boolean supplier that controls when the path will be mirrored for the red alliance
-                // This will flip the path being followed to the red side of the field.
-                // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+        
+    }
 
-                var alliance = DriverStation.getAlliance();
-                if (alliance.isPresent()) {
-                    return alliance.get() == DriverStation.Alliance.Red;
+    public Command go_in_direction_command(PolarVector direction){
+        return runOnce(
+            () -> {
+                PolarVector field_velocity = new PolarVector(direction.angle.minus(get_driver_angle()), direction.length);
+                PolarVector[] velocities = calculate_wheel_velocities(field_velocity, 0.0);
+                last_velocities = velocities;
+                run_wheels(velocities, 1.0);
+            }
+        );
+    }
+
+    public Command stop_command(){
+        return runOnce(
+            () -> stop_wheels()
+        );
+    }
+
+    public Command idle_command(){
+        return runOnce(
+            () -> {
+                if(last_velocities != null){
+                    run_wheels(last_velocities, 1.0);
                 }
-                return false;
-            },
-            this // Reference to this subsystem to set requirements
+
+                // if(Limelight.visible_tracking_target()){
+                //     Tracking limelight_results = Limelight.get_field_tracking();
+                //     pose_estimator.addVisionMeasurement(
+                //         limelight_results.pose,
+                //         limelight_results.timestamp,
+                //         limelight_results.standard_deviation
+                //     );
+                // }
+
+                pose_estimator.update(get_field_angle(), get_module_positions());
+
+                //SmartDashboard.putString("pose",get_robot_pose().toString());
+            }
         );
     }
 
@@ -243,6 +313,13 @@ public class Drive extends SubsystemBase {
     }
 
     public void stop_wheels(){
+        last_velocities = new PolarVector[] {
+            new PolarVector(new Rotation2d(), 0.0),
+            new PolarVector(new Rotation2d(), 0.0),
+            new PolarVector(new Rotation2d(), 0.0),
+            new PolarVector(new Rotation2d(), 0.0)
+        };
+
         front_right_wheel.move_go_motor(0.0);
         front_left_wheel.move_go_motor(0.0);
         back_left_wheel.move_go_motor(0.0);
@@ -277,24 +354,24 @@ public class Drive extends SubsystemBase {
     }
 
     public Pose2d get_robot_pose(){
+
+        //field.setRobotPose(get_robot_pose());
+
         return pose_estimator.getEstimatedPosition();
     }
 
     @Override
     public void periodic() {
-        // This method will be called once per scheduler run
-
         if(Limelight.visible_tracking_target()){
             Tracking limelight_results = Limelight.get_field_tracking();
             pose_estimator.addVisionMeasurement(limelight_results.pose, limelight_results.timestamp, limelight_results.standard_deviation);
         }
 
         pose_estimator.update(get_field_angle(), get_module_positions());
+        
+        // SmartDashboard.putString("pose",get_robot_pose().toString());
 
-        //field.setRobotPose(get_robot_pose());
-        SmartDashboard.putString("pose",get_robot_pose().toString());
-
-        SmartDashboard.putBoolean("is on red team",is_on_red_side());
+        // SmartDashboard.putBoolean("is on red team",is_on_red_side());
     }
 
     @Override

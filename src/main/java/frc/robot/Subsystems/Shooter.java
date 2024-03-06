@@ -12,7 +12,9 @@ import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -75,6 +77,51 @@ public class Shooter extends SubsystemBase {
     );
   }
 
+  public Command auto_aim_command(Pose2d robot_pose, boolean is_on_red_side){
+    return runOnce(
+      () -> {
+        Translation2d shooter_pivot_position = robot_pose.getTranslation().plus(
+          new Translation2d(Constants.ShooterConstants.shooter_pivot_point_forward,robot_pose.getRotation())
+        );
+
+        double dist_meters = 0.0;
+        if(is_on_red_side){
+          dist_meters = shooter_pivot_position.getDistance(Constants.ShooterConstants.red_speaker_position);
+        }else{
+          dist_meters = shooter_pivot_position.getDistance(Constants.ShooterConstants.blue_speaker_position);
+        }
+
+        target_angle = Rotation2d.fromRadians(Math.atan(Constants.ShooterConstants.speaker_height_difference / dist_meters));
+      }
+    );
+  }
+
+  public Command idle_command(){
+    return runOnce(
+      () -> {
+        set_pivot_motor(get_pid());
+      }
+    );
+  }
+
+  public Command start_motors_command(){
+    return runOnce(
+      () -> set_shoot_motors(0.75)
+    );
+  }
+
+  public Command stop_motors_command(){
+    return runOnce(
+      () -> set_shoot_motors(0.0)
+    );
+  }
+
+  public Command set_angle_command(Rotation2d angle){
+    return runOnce(
+      () -> {target_angle = angle;}
+    );
+  }
+
   public Command get_calibrate_command(){
     return runOnce(
       () -> {
@@ -88,8 +135,11 @@ public class Shooter extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    SmartDashboard.putNumber("shooter angle",get_shooter_angle().getDegrees());
-    SmartDashboard.putNumber("target shooter angle", target_angle.getDegrees());
+    // SmartDashboard.putNumber("shooter angle",get_shooter_angle().getDegrees());
+    // SmartDashboard.putNumber("target shooter angle", target_angle.getDegrees());
+    boolean upper_shooter_ready = Math.abs(upper_shoot_motor.getEncoder().getVelocity()) >= Constants.ShooterConstants.shoot_motor_max_rpm - 100;
+    boolean lower_shooter_ready = Math.abs(lower_shoot_motor.getEncoder().getVelocity()) >= Constants.ShooterConstants.shoot_motor_max_rpm - 100;
+    SmartDashboard.putBooleanArray("shooters ready",new Boolean[] {upper_shooter_ready,lower_shooter_ready});
   }
 
   public double get_pid(){
@@ -115,14 +165,16 @@ public class Shooter extends SubsystemBase {
 
     double desired_lower_shooter_speed = -speed + motor_velocity_pid.out(lower_shoot_motor.getEncoder().getVelocity() / Constants.ShooterConstants.shoot_motor_max_rpm, -speed ,0.0);
 
+    
+
     double lower_speed = MathUtil.clamp(
       desired_lower_shooter_speed,
       -1.0,
       1.0
     );
 
-    SmartDashboard.putNumber("upper_shooter_error",  speed - upper_shoot_motor.getEncoder().getVelocity()/Constants.ShooterConstants.shoot_motor_max_rpm);
-    SmartDashboard.putNumber("lower_shooter_error",  -speed - lower_shoot_motor.getEncoder().getVelocity()/Constants.ShooterConstants.shoot_motor_max_rpm);
+
+    
 
     upper_shoot_motor.set(upper_speed * Constants.ShooterConstants.upper_shoot_motor_multiplier);
     lower_shoot_motor.set(lower_speed * Constants.ShooterConstants.lower_shoot_motor_multiplier);

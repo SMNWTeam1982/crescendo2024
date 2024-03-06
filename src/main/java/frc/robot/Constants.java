@@ -3,6 +3,7 @@ package frc.robot;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import frc.robot.Utilities.Rotation2dFix;
 
 public class Constants {
     public static final class DriveConstants {
@@ -15,9 +16,17 @@ public class Constants {
         public static final double wheel_rotation_i = 0.0;
         public static final double wheel_rotation_d = 0.00024;
 
+        public static final double wheel_speed_p = 1.0;
+        public static final double wheel_speed_i = 1.0;
+        public static final double wheel_speed_d = 1.0;
+
         public static final double robot_rotation_p = -0.05;
         public static final double robot_rotation_i = 0.0;
         public static final double robot_rotation_d = 0.0;
+
+        public static final double antidrift_p = -0.05;
+        public static final double antidrift_i = 0.0;
+        public static final double antidrift_d = -0.01;
         
         public static final Rotation2d front_right_encoder_offset = Rotation2d.fromDegrees(305.420);//33.419921875;//35.68359375;//34.365234375;//45.0;//34.365234375;
         public static final Rotation2d front_right_tangent = Rotation2d.fromDegrees(135.0);
@@ -55,9 +64,9 @@ public class Constants {
         public static final double target_tracking_i = 0.0;
         public static final double target_tracking_d = 0.001;
 
-        public static final double auto_move_p = 0.5;
+        public static final double auto_move_p = 0.35;
         public static final double auto_move_i = 0.0;
-        public static final double auto_move_d = 0.01;
+        public static final double auto_move_d = 0.008;
     }
 
     public static final class LimeLightConstants{
@@ -65,6 +74,11 @@ public class Constants {
         public static final int field_movement_channel = 0;
         public static final int speaker_tracking_channel = 1;
         public static final int speaker_aiming_channel = 2;
+    }
+
+    public static final class ClimberConstants{
+        public static final double left_multiplier = 0.9;
+        public static final double right_multiplier = 0.9;
     }
 
     public static final class ShooterConstants{
@@ -76,8 +90,8 @@ public class Constants {
         public static final double shoot_speed_i = 0.0;
         public static final double shoot_speed_d = 0.0;
         public static final Rotation2d shooter_start_angle = Rotation2d.fromDegrees(73.5);
-        
         public static final Rotation2d shooter_load_angle = Rotation2d.fromDegrees(40.0);
+        public static final Rotation2d shooter_climb_angle = Rotation2d.fromDegrees(30.0);
         // gear ratio is 100:1
         public static final double pivot_motor_rotations_to_shooter_rotations = 0.01;
 
@@ -87,13 +101,13 @@ public class Constants {
         public static final double lower_shoot_motor_multiplier = 1.0;
 
         public static final double shooter_pivot_point_height = 0.46; // meters
-        public static final double shooter_pivot_point_forward = 0.2794 - 0.1; // meters
+        public static final double shooter_pivot_point_forward = 0.2794; // meters
 
         public static final double shoot_motor_max_rpm = 5676.0;
 
         public static final Translation2d red_speaker_position = new Translation2d(16.579342 - (16.54/2.0),5.547868-(8.21/2.0));//meters
         public static final Translation2d blue_speaker_position = new Translation2d(-(16.579342 - (16.54/2.0)),5.547868-(8.21/2.0));//meters
-        public static final double speaker_height_difference = 2.00 - shooter_pivot_point_height;
+        public static final double speaker_height_difference = 1.90 - shooter_pivot_point_height;
     }
 
     public static final class IntakeConstants{
@@ -107,9 +121,9 @@ public class Constants {
         public static final double pivot_motor_multiplier = 0.3;
         public static final double intake_multiplier = 0.5;
 
-        public static final Rotation2d deployed_angle = Rotation2d.fromDegrees(195.0);
-        public static final Rotation2d amp_scoring_angle = Rotation2d.fromDegrees(80.0);
-        public static final Rotation2d handoff_angle = Rotation2d.fromDegrees(5.0);
+        public static final Rotation2d deployed_angle = Rotation2dFix.fix(Rotation2d.fromDegrees(195.0));
+        public static final Rotation2d amp_scoring_angle = Rotation2d.fromDegrees(75.0);
+        public static final Rotation2d handoff_angle = intake_starting_position;
 
         public static final double deployedSpeed = 0.2;
         public static final double shootSpeed = 0.2;

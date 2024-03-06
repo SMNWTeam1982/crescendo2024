@@ -28,7 +28,7 @@ public class Wheel {
     public final CANcoder encoder;
     public final Rotation2d encoder_offset;
     public final Rotation2d tangent_angle;
-    private final PID pid = new PID(
+    private final PID wheel_rotation_pid = new PID(
         Constants.DriveConstants.wheel_rotation_p,
         Constants.DriveConstants.wheel_rotation_i,
         Constants.DriveConstants.wheel_rotation_d
@@ -83,8 +83,8 @@ public class Wheel {
         return Rotation2dFix.fix(Rotation2d.fromDegrees(encoder.getAbsolutePosition().getValueAsDouble() * 360.0).minus(encoder_offset));
     }
 
-    public double get_PID(Rotation2d angle){
-        return pid.out(angle.getDegrees(), 0,0);
+    public double get_wheel_rotation_PID(Rotation2d angle){
+        return wheel_rotation_pid.out(angle.getDegrees(), 0,0);
     }
 
     public void set_turn_braking(boolean brake){
@@ -156,7 +156,7 @@ public class Wheel {
         Rotation2d gamma = angle_between( opposite_angle , desired_state.angle );
         if (gamma.getDegrees() < delta.getDegrees()){ // checks for the smallest distance to the target angle
 
-            double power = get_PID( gamma ); // minimize gamma
+            double power = get_wheel_rotation_PID( gamma ); // minimize gamma
             
             if (zeta.getDegrees() > 90.0){ // Checks if left or right movement is needed
                 move_turn_motor( power );
@@ -167,7 +167,7 @@ public class Wheel {
             move_go_motor( -desired_state.length ); // forwards is backwards
         }else{
             
-            double power = get_PID( delta ); // minimize delta
+            double power = get_wheel_rotation_PID( delta ); // minimize delta
     
             if (zeta.getDegrees() > 90.0){ // Checks if left or right movement is needed
                 move_turn_motor( -power );
@@ -196,6 +196,7 @@ public class Wheel {
     }
 
     public void move_go_motor( double speed ){
+        
         go_motor.set( MathUtil.clamp(speed, -1.0, 1.0) * Constants.DriveConstants.wheel_speed_multiplier); 
     }
 }
