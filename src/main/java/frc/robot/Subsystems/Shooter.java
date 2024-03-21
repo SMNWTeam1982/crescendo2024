@@ -55,20 +55,29 @@ public class Shooter extends SubsystemBase {
     lower_shoot_motor.setOpenLoopRampRate(1.0);
     lower_shoot_motor.setClosedLoopRampRate(1.0);
     pivot_encoder = pivot_motor.getEncoder();
-    pivot_encoder.setPosition(Constants.ShooterConstants.shooter_start_angle.getRotations());
+    pivot_encoder.setPosition(
+      Rotation2dFix.fix(Constants.ShooterConstants.shooter_start_angle).getRotations()
+      /Constants.ShooterConstants.pivot_motor_rotations_to_shooter_rotations
+    );
 
     pivot_motor.setIdleMode(IdleMode.kCoast);
     pivot_motor.setIdleMode(IdleMode.kCoast);
+
+    setDefaultCommand(idle_command());
   }
 
-  public Command shooter_command(Supplier<Boolean> shoot_function, Supplier<Rotation2d> target_angle_function){
+  public Command shooter_command(Supplier<Boolean> shoot_function, Supplier<Double> shoot_amount_function, Supplier<Rotation2d> target_angle_function){
     return run(
       () -> {
         if(shoot_function.get()){
-          set_shoot_motors(0.8);
+          set_shoot_motors(shoot_amount_function.get());
+          
         }else{
           set_shoot_motors(0.0);
         }
+
+        SmartDashboard.putNumber("shoot power", shoot_amount_function.get());
+
 
         target_angle = target_angle_function.get();
 
@@ -137,9 +146,13 @@ public class Shooter extends SubsystemBase {
     // This method will be called once per scheduler run
     // SmartDashboard.putNumber("shooter angle",get_shooter_angle().getDegrees());
     // SmartDashboard.putNumber("target shooter angle", target_angle.getDegrees());
-    boolean upper_shooter_ready = Math.abs(upper_shoot_motor.getEncoder().getVelocity()) >= Constants.ShooterConstants.shoot_motor_max_rpm - 100;
-    boolean lower_shooter_ready = Math.abs(lower_shoot_motor.getEncoder().getVelocity()) >= Constants.ShooterConstants.shoot_motor_max_rpm - 100;
-    SmartDashboard.putBooleanArray("shooters ready",new Boolean[] {upper_shooter_ready,lower_shooter_ready});
+    // SmartDashboard.putNumber("upper speed", upper_shoot_motor.getEncoder().getVelocity() / Constants.ShooterConstants.shoot_motor_max_rpm);
+    // SmartDashboard.putNumber("lower speed", lower_shoot_motor.getEncoder().getVelocity() / Constants.ShooterConstants.shoot_motor_max_rpm);
+
+    SmartDashboard.putBoolean("up to speed", upper_shoot_motor.getEncoder().getVelocity() / Constants.ShooterConstants.shoot_motor_max_rpm >= 0.6);
+
+    SmartDashboard.putNumber("angle", get_shooter_angle().getDegrees());
+    SmartDashboard.putNumber("target", target_angle.getDegrees());
   }
 
   public double get_pid(){
@@ -149,7 +162,6 @@ public class Shooter extends SubsystemBase {
   public Rotation2d get_shooter_angle(){
     return Rotation2dFix.fix(
       Rotation2d.fromRotations(pivot_encoder.getPosition() * Constants.ShooterConstants.pivot_motor_rotations_to_shooter_rotations)
-      .plus(Constants.ShooterConstants.shooter_start_angle)
     );
   }
 
@@ -163,7 +175,7 @@ public class Shooter extends SubsystemBase {
       1.0
     );
 
-    double desired_lower_shooter_speed = -speed + motor_velocity_pid.out(lower_shoot_motor.getEncoder().getVelocity() / Constants.ShooterConstants.shoot_motor_max_rpm, -speed ,0.0);
+    double desired_lower_shooter_speed = -speed - motor_velocity_pid.out(lower_shoot_motor.getEncoder().getVelocity() / Constants.ShooterConstants.shoot_motor_max_rpm, -speed ,0.0);
 
     
 
@@ -176,8 +188,8 @@ public class Shooter extends SubsystemBase {
 
     
 
-    upper_shoot_motor.set(upper_speed * Constants.ShooterConstants.upper_shoot_motor_multiplier);
-    lower_shoot_motor.set(lower_speed * Constants.ShooterConstants.lower_shoot_motor_multiplier);
+    upper_shoot_motor.set(speed * Constants.ShooterConstants.upper_shoot_motor_multiplier);
+    lower_shoot_motor.set(-speed * Constants.ShooterConstants.lower_shoot_motor_multiplier);
   }
 
   public void set_pivot_motor(double speed){

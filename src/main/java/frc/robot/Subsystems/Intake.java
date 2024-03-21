@@ -16,9 +16,11 @@ import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.Constants;
 import frc.robot.Utilities.PID;
 import frc.robot.Utilities.Rotation2dFix;
@@ -29,13 +31,13 @@ public class Intake extends SubsystemBase {
   private final CANSparkMax pivot_motor;
   private final RelativeEncoder pivot_encoder;
   private final CANSparkMax intake_motor;
-  private final double offset;
   private final PID pivot_pid = new PID(
     Constants.IntakeConstants.pivot_p,
     Constants.IntakeConstants.pivot_i,
     Constants.IntakeConstants.pivot_d
   );
   private double target_angle = 10.0;
+  private boolean manually_overridden = false;
 
   private final DigitalInput note_detector;
   /** Creates a new Intake. */
@@ -43,20 +45,22 @@ public class Intake extends SubsystemBase {
     pivot_motor = new CANSparkMax(pivot_motor_channel, MotorType.kBrushless);
     pivot_encoder = pivot_motor.getEncoder();
     
-    pivot_encoder.setPosition(0.0);
+    pivot_encoder.setPosition(
+      (Constants.IntakeConstants.intake_starting_position/360.0)
+      /Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations
+    );
     intake_motor = new CANSparkMax(intake_motor_channel, MotorType.kBrushless);
     note_detector = new DigitalInput(note_detector_channel);
     pivot_motor.setIdleMode(IdleMode.kCoast);
 
-    offset = pivot_encoder.getPosition() * Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations;
+    setDefaultCommand(idle_command());
   }
 
   @Override
   public void periodic() {
-    // This method will be called once per scheduler run
-    SmartDashboard.putNumber("pwere", get_pid());
-    SmartDashboard.putNumber("angle", get_intake_angle());
-    SmartDashboard.putNumber("target", target_angle);
+    SmartDashboard.putBoolean("DIO, holding note", holding_note());
+    SmartDashboard.putNumber("intake angle", get_intake_angle());
+    SmartDashboard.putNumber("intake targt", target_angle);
   }
 
   public Command get_calibrate_command(){
@@ -65,7 +69,7 @@ public class Intake extends SubsystemBase {
         pivot_motor.setIdleMode(IdleMode.kCoast);
         double time = Timer.getFPGATimestamp();
         while(Timer.getFPGATimestamp() < time+1.0){};
-        pivot_encoder.setPosition(MathUtil.inputModulus(Constants.IntakeConstants.intake_starting_position.getRotations(),0.0,1.0));
+        pivot_encoder.setPosition(MathUtil.inputModulus(Constants.IntakeConstants.intake_starting_position/360.0,0.0,1.0));
       }
     );
   }
@@ -75,7 +79,7 @@ public class Intake extends SubsystemBase {
   }
 
   public Command idle_command(){
-    return runOnce(
+    return run(
       () -> {
         set_pivot_motor(get_pid());
         if(holding_note()){
@@ -85,13 +89,44 @@ public class Intake extends SubsystemBase {
     );
   }
 
+  public Command grab_note_command(){
+    return new SequentialCommandGroup(
+      deploy_command(),
+      suck_command(),
+      new ParallelCommandGroup(
+        new WaitUntilCommand(
+          () -> holding_note()
+        ),
+        idle_command()
+      ),
+      stop_command(),
+      handoff_command(),
+      new ParallelCommandGroup(
+        new WaitCommand(1.0),
+        idle_command()
+      )
+    );
+  }
+
   public Command set_angle_command(double angle){
     return runOnce(
       () -> {
-        if(angle != -1){
+        if(angle > 0.0){
           target_angle = angle;
         }
       }
+    );
+  }
+
+  public Command handoff_command(){
+    return runOnce(
+      () -> target_angle = Constants.IntakeConstants.handoff_angle
+    );
+  }
+
+  public Command deploy_command(){
+    return runOnce(
+      () -> target_angle = Constants.IntakeConstants.deployed_angle
     );
   }
 
@@ -131,7 +166,13 @@ public class Intake extends SubsystemBase {
     );
   }
 
-  public Command get_intake_command(Supplier<Double> intake_function, Supplier<Double> desired_angle_function){
+  public Command get_intake_command(
+    Supplier<Double> intake_function,
+    Supplier<Double> desired_angle_function, 
+    Supplier<Boolean> toggle_manual_override_function,
+    Supplier<Double> manual_movement_function,
+    Supplier<Boolean> calibrate_function
+  ){
     //pivot_encoder.setPosition(Constants.IntakeConstants.intake_starting_position.getRotations());
     return run(
       () -> {
@@ -141,13 +182,31 @@ public class Intake extends SubsystemBase {
         }
         set_intake(intake_speed);
 
-        double angle = desired_angle_function.get();
-
-        if(angle != -1){
-          target_angle = angle;
+        if(calibrate_function.get()){
+          manually_overridden = false;
+          pivot_encoder.setPosition(
+            (Constants.IntakeConstants.intake_starting_position/360.0)
+            /Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations
+          );
         }
 
-        set_pivot_motor(get_pid());
+        if(toggle_manual_override_function.get()){
+          manually_overridden = !manually_overridden;
+        }
+
+        if( manually_overridden ){
+          set_pivot_motor(manual_movement_function.get());
+        }else{
+          double angle = desired_angle_function.get();
+
+          if(angle > 0.0){
+            target_angle = angle;
+          }
+
+          set_pivot_motor(get_pid());
+        }
+
+
       }
     );
   }
@@ -157,11 +216,11 @@ public class Intake extends SubsystemBase {
   }
 
   public double get_pid(){
-    return pivot_pid.out(get_intake_angle().getDegrees(), target_angle.getDegrees(), 0.0);
+    return pivot_pid.out(get_intake_angle(), target_angle, 0.0);
   }
 
   public double get_intake_angle(){
-    return pivot_encoder.getPosition() * Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations - offset + 10.0;
+    return (pivot_encoder.getPosition() * Constants.IntakeConstants.pivot_motor_rotations_to_intake_rotations) * 360;
     // return Rotation2dFix.fix(
     //   Rotation2d.fromRotations(MathUtil.clamp(, 0.0, 359.0))
     //   .minus(offset).plus(Constants.IntakeConstants.intake_starting_position)

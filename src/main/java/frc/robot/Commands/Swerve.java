@@ -8,8 +8,10 @@ import java.util.function.Supplier;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.Constants;
 import frc.robot.Subsystems.Swerve.Drive;
 import frc.robot.Utilities.PID;
 import frc.robot.Utilities.PolarVector;
@@ -83,7 +85,7 @@ public class Swerve extends Command {
       PolarVector desired_velocity = desired_velocity_function.get();
 
       if(desired_velocity.length < 0.05){
-        maximize_velocity = false;
+        //maximize_velocity = false;
       }
 
       robot_rotation = drive.get_driver_angle();
@@ -97,27 +99,24 @@ public class Swerve extends Command {
 
       PolarVector field_oriented_velocity = new PolarVector(desired_velocity.angle.minus(robot_rotation), desired_velocity.length);
 
+      // ChassisSpeeds speeds = new ChassisSpeeds(
+      //   field_oriented_velocity.x() * Constants.DriveConstants.max_speed_meters_per_second,
+      //   field_oriented_velocity.y() * Constants.DriveConstants.max_speed_meters_per_second,
+      //   desired_angular_velocity * Constants.DriveConstants.max_radians_per_second);
+
+      // drive.drive_from_chassis_speeds(speeds);
+
       PolarVector[] wheel_velocities = drive.calculate_wheel_velocities(field_oriented_velocity, MathUtil.clamp(desired_angular_velocity,-1.0,1.0));
 
-      if(!maximize_velocity){
-        drive.run_wheels(wheel_velocities, 1.0);
-        return;
-      }
-
-      double highest = 0.0;
-      for(PolarVector wheel_velocity : wheel_velocities){
-        if( wheel_velocity.length > highest ){
-          highest = wheel_velocity.length;
-        }
-      }
-
-      double multiplier = MathUtil.clamp(1.0 / highest,0.0,1.0);
-
-      if(highest < 0.01){
-          multiplier = 1.0;
-      }
+      double multiplier = Drive.calculate_multiplier(wheel_velocities);
       
       drive.run_wheels(wheel_velocities, multiplier);
+
+      SmartDashboard.putNumber("desired_speed", desired_velocity.length);
+
+      SmartDashboard.putNumberArray("speeds", new double[] {wheel_velocities.length} );
+
+      SmartDashboard.putNumber("multiplier", multiplier);
     }
 
     // Called once the command ends or is interrupted.

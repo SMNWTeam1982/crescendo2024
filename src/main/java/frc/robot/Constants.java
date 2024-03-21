@@ -3,12 +3,11 @@ package frc.robot;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import frc.robot.Utilities.Rotation2dFix;
 
 public class Constants {
     public static final class DriveConstants {
         
-        public static final double wheel_speed_multiplier = 1.0;//0.2
+        public static final double wheel_speed_multiplier = 0.95;//0.2
         public static final double wheel_rotation_multiplier = 0.25;//0.25
         public static final double angular_velocity_multiplier = 0.68;
 
@@ -20,7 +19,7 @@ public class Constants {
         public static final double wheel_speed_i = 1.0;
         public static final double wheel_speed_d = 1.0;
 
-        public static final double robot_rotation_p = -0.05;
+        public static final double robot_rotation_p = -0.02;
         public static final double robot_rotation_i = 0.0;
         public static final double robot_rotation_d = 0.0;
 
@@ -77,28 +76,29 @@ public class Constants {
     }
 
     public static final class ClimberConstants{
-        public static final double left_multiplier = 0.9;
-        public static final double right_multiplier = 0.9;
+        public static final double left_multiplier = 1.0;
+        public static final double right_multiplier = 1.0;
     }
 
     public static final class ShooterConstants{
-        public static final double pivot_p = 0.018;
+        public static final double pivot_p = 0.016;
         public static final double pivot_i = 0.0;
         public static final double pivot_d = 0.0;
 
-        public static final double shoot_speed_p = 0.1;
+        public static final double shoot_speed_p = 0.05;
         public static final double shoot_speed_i = 0.0;
         public static final double shoot_speed_d = 0.0;
-        public static final Rotation2d shooter_start_angle = Rotation2d.fromDegrees(73.5);
-        public static final Rotation2d shooter_load_angle = Rotation2d.fromDegrees(40.0);
-        public static final Rotation2d shooter_climb_angle = Rotation2d.fromDegrees(30.0);
+        public static final Rotation2d shooter_start_angle = Rotation2d.fromDegrees(69.0);
+        public static final Rotation2d shooter_default_angle = Rotation2d.fromDegrees(60.0);
+        public static final Rotation2d shooter_override_angle = Rotation2d.fromDegrees(40.0);
+        public static final Rotation2d shooter_climb_angle = Rotation2d.fromDegrees(10.0);
         // gear ratio is 100:1
         public static final double pivot_motor_rotations_to_shooter_rotations = 0.01;
 
         public static final double pivot_motor_multiplier = 1.0;
 
-        public static final double upper_shoot_motor_multiplier = 1.0;
-        public static final double lower_shoot_motor_multiplier = 1.0;
+        public static final double upper_shoot_motor_multiplier = 0.85;
+        public static final double lower_shoot_motor_multiplier = 0.85;
 
         public static final double shooter_pivot_point_height = 0.46; // meters
         public static final double shooter_pivot_point_forward = 0.2794; // meters
@@ -107,23 +107,23 @@ public class Constants {
 
         public static final Translation2d red_speaker_position = new Translation2d(16.579342 - (16.54/2.0),5.547868-(8.21/2.0));//meters
         public static final Translation2d blue_speaker_position = new Translation2d(-(16.579342 - (16.54/2.0)),5.547868-(8.21/2.0));//meters
-        public static final double speaker_height_difference = 1.90 - shooter_pivot_point_height;
+        public static final double speaker_height_difference = 2.0 - shooter_pivot_point_height;
     }
 
     public static final class IntakeConstants{
-        public static final double pivot_p = 0.3;
+        public static final double pivot_p = 0.015;//0.3
         public static final double pivot_i = 0.0;
-        public static final double pivot_d = 0.0;
-        public static final Rotation2d intake_starting_position = Rotation2d.fromDegrees(10.0);
+        public static final double pivot_d = 0.0;//0.005
+        public static final double intake_starting_position = 10.0;
         //gear ratio is 80:1
         public static final double pivot_motor_rotations_to_intake_rotations = 0.0125;
 
-        public static final double pivot_motor_multiplier = 0.3;
-        public static final double intake_multiplier = 0.5;
+        public static final double pivot_motor_multiplier = 0.5;//0.8
+        public static final double intake_multiplier = 0.35;//0.5
 
-        public static final Rotation2d deployed_angle = Rotation2dFix.fix(Rotation2d.fromDegrees(195.0));
-        public static final Rotation2d amp_scoring_angle = Rotation2d.fromDegrees(75.0);
-        public static final Rotation2d handoff_angle = intake_starting_position;
+        public static final double deployed_angle = 195.0;
+        public static final double amp_scoring_angle = 75.0;
+        public static final double handoff_angle = 10.0;
 
         public static final double deployedSpeed = 0.2;
         public static final double shootSpeed = 0.2;

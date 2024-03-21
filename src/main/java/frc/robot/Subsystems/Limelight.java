@@ -9,18 +9,23 @@ import frc.robot.Utilities.LimelightHelpers;
 import frc.robot.Utilities.Tracking;
 
 public class Limelight {
-    public static Rotation2d get_speaker_angle(){
-        set_pipeline(Constants.LimeLightConstants.speaker_aiming_channel);
-        if(get_y() > 15){
-            return Rotation2d.fromDegrees(0.0);
-        }
-        //if ( == Double.isNaN(get_y()))
-        return Rotation2d.fromDegrees(get_y() - 15.0);
-    }
+    // public static Rotation2d get_speaker_angle(){
+    //     set_pipeline(Constants.LimeLightConstants.speaker_aiming_channel);
+    //     if(get_y() > 15){
+    //         return Rotation2d.fromDegrees(0.0);
+    //     }
+    //     //if ( == Double.isNaN(get_y()))
+    //     return Rotation2d.fromDegrees(get_y() - 15.0);
+    // }
 
     public static boolean visible_speaker(){
         set_pipeline(Constants.LimeLightConstants.speaker_tracking_channel);
         return visible_target();
+    }
+
+    public static double get_speaker_yaw(){
+        set_pipeline(Constants.LimeLightConstants.speaker_tracking_channel);
+        return get_x();
     }
 
     public static boolean visible_tracking_target(){

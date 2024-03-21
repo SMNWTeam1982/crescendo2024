@@ -14,6 +14,10 @@ public class Gyroscope {
         zero_angle();
     }
 
+    public double get_rate_yaw(){
+        return gyro.getRate();
+    }
+
     public Rotation2d get_angle(){
         return Rotation2dFix.fix(gyro.getRotation2d().minus(offset));
     }

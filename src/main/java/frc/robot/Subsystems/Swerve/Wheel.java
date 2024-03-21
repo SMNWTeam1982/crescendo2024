@@ -6,9 +6,11 @@ import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants;
 import frc.robot.Utilities.PID;
 import frc.robot.Utilities.PolarVector;
@@ -33,6 +35,8 @@ public class Wheel {
         Constants.DriveConstants.wheel_rotation_i,
         Constants.DriveConstants.wheel_rotation_d
     );
+
+    //private final SimpleMotorFeedforward feeder = new SimpleMotorFeedforward()
 
     private Rotation2d last_rotation = Rotation2d.fromDegrees(0.0);
 
@@ -193,10 +197,12 @@ public class Wheel {
 
     public void move_turn_motor( double speed ){
         turn_motor.set( MathUtil.clamp(speed, -1.0, 1.0) * Constants.DriveConstants.wheel_rotation_multiplier );
+        //turn_motor.getOutputCurrent()
     }
 
     public void move_go_motor( double speed ){
         
         go_motor.set( MathUtil.clamp(speed, -1.0, 1.0) * Constants.DriveConstants.wheel_speed_multiplier); 
+        //SmartDashboard.putNumber(String.valueOf(encoder.getDeviceID()), MathUtil.clamp(speed, -1.0, 1.0) * Constants.DriveConstants.wheel_speed_multiplier);
     }
 }

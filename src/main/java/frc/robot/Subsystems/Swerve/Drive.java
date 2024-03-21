@@ -107,11 +107,7 @@ public class Drive extends SubsystemBase {
                 // This will flip the path being followed to the red side of the field.
                 // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
 
-                var alliance = DriverStation.getAlliance();
-                if (alliance.isPresent()) {
-                    return alliance.get() == DriverStation.Alliance.Red;
-                }
-                return false;
+                return is_on_red_side;
             },
             this // Reference to this subsystem to set requirements
         );
@@ -139,22 +135,82 @@ public class Drive extends SubsystemBase {
         return is_on_red_side;
     }
 
-    public double get_rotation_pid(Rotation2d desired_angle){
-        //stolen from wheel logic
-        Rotation2d current_angle = get_field_angle();
-        Rotation2d perpendicular_angle = Rotation2dFix.fix(current_angle.plus(Rotation2d.fromDegrees(90.0)));
+    // public double get_rotation_pid(Rotation2d desired_angle){
+    //     //stolen from wheel logic
+    //     Rotation2d current_angle = get_field_angle();
+    //     Rotation2d perpendicular_angle = Rotation2dFix.fix(current_angle.plus(Rotation2d.fromDegrees(90.0)));
     
-        // establishes the three angles used to determine the optimal way to move the wheel
-        Rotation2d delta = Wheel.angle_between( current_angle , desired_angle );
-        Rotation2d zeta = Wheel.angle_between( perpendicular_angle , desired_angle );
+    //     // establishes the three angles used to determine the optimal way to move the wheel
+    //     Rotation2d delta = Wheel.angle_between( current_angle , desired_angle );
+    //     Rotation2d zeta = Wheel.angle_between( perpendicular_angle , desired_angle );
 
-        double power = MathUtil.clamp(robot_rotation_pid.out(delta.getDegrees(),0.0,0.0),-1.0,1.0);
+    //     double power = MathUtil.clamp(robot_rotation_pid.out(delta.getDegrees(),0.0,0.0),-1.0,1.0);
         
-        if (zeta.getDegrees() > 90.0){ // Checks if left or right movement is needed
-            return power;
-        }else{
-            return -power;
-        }
+    //     if (zeta.getDegrees() > 90.0){ // Checks if left or right movement is needed
+    //         return power;
+    //     }else{
+    //         return -power;
+    //     }
+    // }
+
+    public double get_rotation_pid(){
+        double output = robot_rotation_pid.out(Limelight.get_speaker_yaw(), 0.0, 0.0);
+        return MathUtil.clamp(output, -1.0, 1.0);
+    }
+
+    public Command auto_aim_command(){
+        return rotate_command(get_field_angle().plus(Rotation2d.fromDegrees(Limelight.get_speaker_yaw())));
+    }
+
+    public Command rotate_command(Rotation2d desired_angle){
+        return runOnce (
+            () -> {
+                //stolen from wheel logic
+                Rotation2d current_angle = get_field_angle();
+                Rotation2d perpendicular_angle = Rotation2dFix.fix(current_angle.plus(Rotation2d.fromDegrees(90.0)));
+            
+                // establishes the three angles used to determine the optimal way to move the wheel
+                Rotation2d delta = Wheel.angle_between( current_angle , desired_angle );
+                Rotation2d zeta = Wheel.angle_between( perpendicular_angle , desired_angle );
+                
+                while(Math.abs(delta.getDegrees() - current_angle.getDegrees()) > 3){
+                    current_angle = get_field_angle();
+                    perpendicular_angle = Rotation2dFix.fix(current_angle.plus(Rotation2d.fromDegrees(90.0)));
+                
+                    // establishes the three angles used to determine the optimal way to move the wheel
+                    delta = Wheel.angle_between( current_angle , desired_angle );
+                    zeta = Wheel.angle_between( perpendicular_angle , desired_angle );
+
+                    double power = MathUtil.clamp(robot_antidrift_pid.out(delta.getDegrees(),0.0,0.0),-1.0,1.0);
+                    
+                    if (zeta.getDegrees() > 90.0){ // Checks if left or right movement is needed
+                        power = power;
+                    }else{
+                        power = -power;
+                    }
+
+                    PolarVector[] wheel_velocities = calculate_wheel_velocities(new PolarVector(new Rotation2d(), 0.0), MathUtil.clamp(power,-1.0,1.0));
+              
+                    double highest = 0.0;
+                    for(PolarVector wheel_velocity : wheel_velocities){
+                      if( wheel_velocity.length > highest ){
+                        highest = wheel_velocity.length;
+                      }
+                    }
+              
+                    double multiplier = MathUtil.clamp(1.0 / highest,0.0,1.0);
+              
+                    if(highest < 0.01){
+                        multiplier = 1.0;
+                    }
+                    
+                    run_wheels(wheel_velocities, multiplier);
+                }
+                
+            }
+
+
+        );
     }
 
     public double get_rotation_pid_antidrift(Rotation2d desired_angle){
@@ -227,6 +283,27 @@ public class Drive extends SubsystemBase {
             back_right_wheel .calculate(desired_robot_linear_velocity, desired_angular_velocity)
         };
     }
+
+    public static double calculate_multiplier(PolarVector[] desired_velocities){
+        double highest = 0.0;
+        for(PolarVector wheel_velocity : desired_velocities){
+          if( wheel_velocity.length > highest ){
+            highest = wheel_velocity.length;
+          }
+        }
+  
+        double multiplier = MathUtil.clamp(1.0 / highest, 0.0, 2.0);
+  
+        if(highest < 0.01){
+            multiplier = 0.0;
+        }
+
+        return multiplier;
+    }
+
+    public void verify_that_its_working(){
+        System.out.println(":)");
+    }
     
     public void drive_from_chassis_speeds(ChassisSpeeds speeds){
         double x = MathUtil.clamp(speeds.vxMetersPerSecond / Constants.DriveConstants.max_speed_meters_per_second, -1.0,1.0);
@@ -243,18 +320,7 @@ public class Drive extends SubsystemBase {
 
         PolarVector[] wheel_velocities = calculate_wheel_velocities(desired_velocity, speeds.omegaRadiansPerSecond/Constants.DriveConstants.max_radians_per_second);
   
-        double highest = 0.0;
-        for(PolarVector wheel_velocity : wheel_velocities){
-          if( wheel_velocity.length > highest ){
-            highest = wheel_velocity.length;
-          }
-        }
-  
-        double multiplier = MathUtil.clamp(1.0 / highest,0.0,1.0);
-  
-        if(highest < 0.01){
-            multiplier = 1.0;
-        }
+        double multiplier = calculate_multiplier(wheel_velocities);
         
         run_wheels(wheel_velocities, multiplier);
     }

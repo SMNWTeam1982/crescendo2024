@@ -4,10 +4,12 @@
 
 package frc.robot;
 
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.net.PortForwarder;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.Commands.Calibrate;
+
 
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
@@ -16,6 +18,10 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
+    for( int port = 5800; port <= 5807; port++){  
+      PortForwarder.add(port,"limelight.local",port);
+    }
+    CameraServer.startAutomaticCapture();
     m_robotContainer = new RobotContainer();
   }
 
@@ -35,7 +41,8 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
-    m_autonomousCommand = m_robotContainer.getAutonomousCommand();
+    //m_autonomousCommand = m_robotContainer.getAutonomousCommand();
+    m_autonomousCommand = m_robotContainer.chooser.getSelected();
 
     if (m_autonomousCommand != null) {
       m_autonomousCommand.schedule();
@@ -54,7 +61,7 @@ public class Robot extends TimedRobot {
       m_autonomousCommand.cancel();
     }
     m_robotContainer.configureBindings();
-    //CommandScheduler.getInstance().schedule(Calibrate(m_robotContainer.swerve_drive));
+    m_robotContainer.set_teleOp_commands();
   }
 
   @Override
