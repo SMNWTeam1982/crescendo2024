@@ -309,6 +309,8 @@ public class Drive extends SubsystemBase {
         double x = MathUtil.clamp(speeds.vxMetersPerSecond / Constants.DriveConstants.max_speed_meters_per_second, -1.0,1.0);
         double y = MathUtil.clamp(speeds.vyMetersPerSecond / Constants.DriveConstants.max_speed_meters_per_second, -1.0,1.0);
 
+        SmartDashboard.putString("desired speeds", speeds.toString());
+
         double speed = Math.sqrt(x * x + y * y);
         if(speed > 1.0){speed = 1.0;}
         if(speed < 0.1){speed = 0.0;}
@@ -318,7 +320,7 @@ public class Drive extends SubsystemBase {
             speed
         );
 
-        PolarVector[] wheel_velocities = calculate_wheel_velocities(desired_velocity, speeds.omegaRadiansPerSecond/Constants.DriveConstants.max_radians_per_second);
+        PolarVector[] wheel_velocities = calculate_wheel_velocities(desired_velocity, -speeds.omegaRadiansPerSecond/Constants.DriveConstants.max_radians_per_second);
   
         double multiplier = calculate_multiplier(wheel_velocities);
         
@@ -411,19 +413,35 @@ public class Drive extends SubsystemBase {
     }
 
     public ChassisSpeeds getChassisSpeed() {
-       return Constants.DriveConstants.kinematics.toChassisSpeeds(
-            front_right_wheel.get_state(),
-            front_left_wheel .get_state(),
-            back_left_wheel  .get_state(),
-            back_right_wheel .get_state()
+        System.out.println("get speed called");
+
+        ChassisSpeeds speeds = 
+            Constants.DriveConstants.kinematics.toChassisSpeeds(
+                front_right_wheel.get_state(),
+                front_left_wheel .get_state(),
+                back_left_wheel  .get_state(),
+                back_right_wheel .get_state()
+            );
+
+        SmartDashboard.putString(
+            "chassis speeds",
+            speeds.toString()
         );
+
+
+
+        return speeds;
     }
 
     public Pose2d get_robot_pose(){
 
         //field.setRobotPose(get_robot_pose());
 
+        System.out.println("get pose called");
+
         return pose_estimator.getEstimatedPosition();
+
+        
     }
 
     @Override
@@ -435,7 +453,7 @@ public class Drive extends SubsystemBase {
 
         pose_estimator.update(get_field_angle(), get_module_positions());
         
-        // SmartDashboard.putString("pose",get_robot_pose().toString());
+        SmartDashboard.putString("pose",get_robot_pose().toString());
 
         // SmartDashboard.putBoolean("is on red team",is_on_red_side());
     }

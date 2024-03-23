@@ -156,7 +156,9 @@ public class RobotContainer {
     //   chooser.getSelected(),
     //   Commands.runOnce( () -> set_teleOp_commands() )
     // );
-    return AutoBuilder.followPath(PathPlannerPath.fromPathFile("test"));
+
+    System.out.println("get command called");
+    return new PathPlannerAuto("test");
     // return stitchSequential(
     //   Commands.runOnce(
     //     () -> {

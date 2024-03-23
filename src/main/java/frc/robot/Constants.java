@@ -47,7 +47,7 @@ public class Constants {
         public static final double motor_rotations_to_meters_traveled = -0.0422963;
         public static final double go_motor_rpm_to_meters_per_second = 7.049382716E-4;
 
-        public static final double max_speed_meters_per_second = 5676.0 * motor_rotations_to_meters_traveled; //estimation
+        public static final double max_speed_meters_per_second = -5676.0 * motor_rotations_to_meters_traveled; //estimation
         public static final double max_radians_per_second = 3.79;
 
         public static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(
